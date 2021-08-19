@@ -15,6 +15,8 @@
  */
 
 import { ChildProcess } from 'child_process';
+import { PassThrough } from 'stream';
+import fs from 'fs';
 import { assert, monotonicTime } from '../../utils/utils';
 import { Page } from '../page';
 import { launchProcess } from '../../utils/processLauncher';
@@ -35,6 +37,7 @@ export class VideoRecorder {
   private _frameQueue: Buffer[] = [];
   private _isStopped = false;
   private _ffmpegPath: string;
+  private _stream = new PassThrough();
 
   static async launch(page: Page, ffmpegPath: string, options: types.PageScreencastOptions): Promise<VideoRecorder> {
     if (!options.outputFile.endsWith('.webm'))
@@ -87,36 +90,24 @@ export class VideoRecorder {
 
     const w = options.width;
     const h = options.height;
-    const args = `-loglevel error -f image2pipe -c:v mjpeg -i - -y -an -r ${fps} -c:v vp8 -qmin 0 -qmax 50 -crf 8 -deadline realtime -b:v 1M -vf pad=${w}:${h}:0:0:gray,crop=${w}:${h}:0:0`.split(' ');
-    args.push(options.outputFile);
     const progress = this._progress;
 
-    const { launchedProcess, gracefullyClose } = await launchProcess({
-      command: this._ffmpegPath,
-      args,
-      stdio: 'stdin',
-      log: (message: string) => progress.log(message),
-      tempDirectories: [],
-      attemptToGracefullyClose: async () => {
-        progress.log('Closing stdin...');
-        launchedProcess.stdin.end();
-      },
-      onExit: (exitCode, signal) => {
-        progress.log(`ffmpeg onkill exitCode=${exitCode} signal=${signal}`);
-      },
+    const writeStream = fs.createWriteStream(options.outputFile);
+    this._stream.pipe(writeStream);
+    this._stream.on('error',  (e: Error) => {
+      progress.log(`video error`);
+      // do not reject as a result of not having frames
+      if (
+        !this._lastFrameBuffer &&
+        e.message.includes('pipe:0: End of file')
+      ) {
+        return
+      }
+      progress.log(`pw-video: error capturing video: ${e.message}`);
     });
-    launchedProcess.stdin.on('finish', () => {
-      progress.log('ffmpeg finished input.');
-    });
-    launchedProcess.stdin.on('error', () => {
-      progress.log('ffmpeg error.');
-    });
-    this._process = launchedProcess;
-    this._gracefullyClose = gracefullyClose;
   }
 
   writeFrame(frame: Buffer, timestamp: number) {
-    assert(this._process);
     if (this._isStopped)
       return;
     this._progress.log(`writing frame ` + timestamp);
@@ -140,10 +131,7 @@ export class VideoRecorder {
   }
 
   private async _sendFrame(frame: Buffer) {
-    return new Promise(f => this._process!.stdin.write(frame, f)).then(error => {
-      if (error)
-        this._progress.log(`ffmpeg failed to write: ${error}`);
-    });
+    return this._stream.write(frame);
   }
 
   async stop() {
@@ -152,6 +140,6 @@ export class VideoRecorder {
     this.writeFrame(Buffer.from([]), this._lastFrameTimestamp + (monotonicTime() - this._lastWriteTimestamp) / 1000);
     this._isStopped = true;
     await this._lastWritePromise;
-    await this._gracefullyClose!();
+    await this._stream.end();
   }
 }
