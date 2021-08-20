@@ -17,9 +17,8 @@
 import { ChildProcess } from 'child_process';
 import { PassThrough } from 'stream';
 import fs from 'fs';
-import { assert, monotonicTime } from '../../utils/utils';
+import { monotonicTime } from '../../utils/utils';
 import { Page } from '../page';
-import { launchProcess } from '../../utils/processLauncher';
 import { Progress, ProgressController } from '../progress';
 import { internalCallMetadata } from '../instrumentation';
 import * as types from '../types';

@@ -242,19 +242,23 @@ export class InjectedScript {
       this._evaluator.begin();
       const playwrightSelector = selectors.find(selector => selector.type === SelectorTypeEnum.PLAYWRIGHT);
       if (playwrightSelector) {
-        const elements = this.querySelectorAll(this.parseSelector(playwrightSelector.value), root);
-        if (elements && elements.length) {
-          this._evaluator.end();
-          (window as any)[uuid] = { selector: playwrightSelector.value, selectorType: playwrightSelector.type };
-          return elements;
-        }
+        try {
+          const elements = this.querySelectorAll(this.parseSelector(playwrightSelector.value), root);
+          if (elements && elements.length) {
+            this._evaluator.end();
+            (window as any)[uuid] = { selector: playwrightSelector.value, selectorType: playwrightSelector.type };
+            return elements;
+          }
+        } catch (e) { }
       }
 
       const nonPlaywrightSelectors = selectors.filter(selector => selector.type !== SelectorTypeEnum.PLAYWRIGHT);
       for (const nonPlaywrightSelector of nonPlaywrightSelectors) {
         let elements: Element[] = [];
-        if (nonPlaywrightSelector.type === SelectorTypeEnum.XPATH) elements = getElementsByXPath(root, nonPlaywrightSelector.value);
-        else elements = this._evaluator._queryCSS({ scope: root as Document | Element, pierceShadow: shadow }, nonPlaywrightSelector.value);
+        try {
+          if (nonPlaywrightSelector.type === SelectorTypeEnum.XPATH) elements = getElementsByXPath(root, nonPlaywrightSelector.value);
+          else elements = this._evaluator._queryCSS({ scope: root as Document | Element, pierceShadow: shadow }, nonPlaywrightSelector.value);
+        } catch (e) { }
 
         if (elements && elements.length) {
           this._evaluator.end();
