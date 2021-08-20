@@ -25,6 +25,25 @@ import { CSSComplexSelectorList } from '../common/cssParser';
 
 type Predicate<T> = (progress: InjectedScriptProgress, continuePolling: symbol) => T | symbol;
 
+export enum SelectorTypeEnum {
+	ID = 'id',
+	PLAYWRIGHT = 'playwright',
+	DATA_ATTRIBUTE = 'dataAttribute',
+	ATTRIBUTE = 'attribute',
+	INNER_VALUE = 'innerValue',
+  PNC = 'PnC',
+  XPATH = 'xpath',
+}
+
+export interface ICrusherSelectorInfo {
+  uuid: string;
+  selectors: Array<{
+    type: SelectorTypeEnum;
+    value: string;
+    uniquenessScore?: number;
+  }>;
+}
+
 export type InjectedScriptProgress = {
   aborted: boolean,
   log: (message: string) => void,
@@ -66,6 +85,7 @@ export class InjectedScript {
     this._engines.set('xpath:light', XPathEngine);
     this._engines.set('_react', ReactEngine);
     this._engines.set('_vue', VueEngine);
+    this._engines.set('crusher', this._createCrusherEngine(true));
     this._engines.set('text', this._createTextEngine(true));
     this._engines.set('text:light', this._createTextEngine(false));
     this._engines.set('id', this._createAttributeEngine('id', true));
@@ -199,6 +219,57 @@ export class InjectedScript {
     return {
       queryAll(root: SelectorRoot, body: any) {
         return evaluator.query({ scope: root as Document | Element, pierceShadow: true }, body);
+      }
+    };
+  }
+
+  private _createCrusherEngine(shadow: boolean = true): SelectorEngine {
+    const getElementsByXPath = (root: Node, selector: string): Element[] => {
+      if (selector.startsWith('/')) selector = '.' + selector;
+      const result: Element[] = [];
+      const document = root instanceof Document ? root : root.ownerDocument;
+      if (!document) return result;
+      const it = document.evaluate(selector, root, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE);
+      for (let node = it.iterateNext(); node; node = it.iterateNext())
+        if (node.nodeType === Node.ELEMENT_NODE) result.push(node as Element);
+
+      return result;
+    };
+
+    const queryList = (root: SelectorRoot, encodedSelectors: string): Element[] => {
+      const { uuid, selectors } = JSON.parse(decodeURIComponent(encodedSelectors)) as ICrusherSelectorInfo;
+
+      this._evaluator.begin();
+      const playwrightSelector = selectors.find(selector => selector.type === SelectorTypeEnum.PLAYWRIGHT);
+      if (playwrightSelector) {
+        const elements = this.querySelectorAll(this.parseSelector(playwrightSelector.value), root);
+        if (elements && elements.length) {
+          this._evaluator.end();
+          (window as any)[uuid] = { selector: playwrightSelector.value, selectorType: playwrightSelector.type };
+          return elements;
+        }
+      }
+
+      const nonPlaywrightSelectors = selectors.filter(selector => selector.type !== SelectorTypeEnum.PLAYWRIGHT);
+      for (const nonPlaywrightSelector of nonPlaywrightSelectors) {
+        let elements: Element[] = [];
+        if (nonPlaywrightSelector.type === SelectorTypeEnum.XPATH) elements = getElementsByXPath(root, nonPlaywrightSelector.value);
+        else elements = this._evaluator._queryCSS({ scope: root as Document | Element, pierceShadow: shadow }, nonPlaywrightSelector.value);
+
+        if (elements && elements.length) {
+          this._evaluator.end();
+          (window as any)[uuid] = { selector: nonPlaywrightSelector.value, selectorType: nonPlaywrightSelector.type };
+          return elements;
+        }
+      }
+
+      this._evaluator.end();
+      return [];
+    };
+
+    return {
+      queryAll: (root: SelectorRoot, encodedSelectors: string): Element[] => {
+        return queryList(root, encodedSelectors);
       }
     };
   }
