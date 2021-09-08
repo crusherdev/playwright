@@ -237,38 +237,40 @@ export class InjectedScript {
     };
 
     const queryList = (root: SelectorRoot, encodedSelectors: string): Element[] => {
-      const { uuid, selectors } = JSON.parse(decodeURIComponent(encodedSelectors)) as ICrusherSelectorInfo;
+      try {
+        const { uuid, selectors } = JSON.parse(decodeURIComponent(encodedSelectors)) as ICrusherSelectorInfo;
 
-      this._evaluator.begin();
-      const playwrightSelector = selectors.find(selector => selector.type === SelectorTypeEnum.PLAYWRIGHT);
-      if (playwrightSelector) {
-        try {
-          const elements = this.querySelectorAll(this.parseSelector(playwrightSelector.value), root);
+        this._evaluator.begin();
+        const playwrightSelector = selectors.find(selector => selector.type === SelectorTypeEnum.PLAYWRIGHT);
+        if (playwrightSelector) {
+          try {
+            const elements = this.querySelectorAll(this.parseSelector(playwrightSelector.value), root);
+            if (elements && elements.length) {
+              this._evaluator.end();
+              (window as any)[uuid] = { selector: playwrightSelector.value, selectorType: playwrightSelector.type };
+              return elements;
+            }
+          } catch (e) { }
+        }
+
+        const nonPlaywrightSelectors = selectors.filter(selector => selector.type !== SelectorTypeEnum.PLAYWRIGHT);
+        for (const nonPlaywrightSelector of nonPlaywrightSelectors) {
+          let elements: Element[] = [];
+          try {
+            if (nonPlaywrightSelector.type === SelectorTypeEnum.XPATH) elements = getElementsByXPath(root, nonPlaywrightSelector.value);
+            else elements = this._evaluator._queryCSS({ scope: root as Document | Element, pierceShadow: shadow }, nonPlaywrightSelector.value);
+          } catch (e) { }
+
           if (elements && elements.length) {
             this._evaluator.end();
-            (window as any)[uuid] = { selector: playwrightSelector.value, selectorType: playwrightSelector.type };
+            (window as any)[uuid] = { selector: nonPlaywrightSelector.value, selectorType: nonPlaywrightSelector.type };
             return elements;
           }
-        } catch (e) { }
-      }
-
-      const nonPlaywrightSelectors = selectors.filter(selector => selector.type !== SelectorTypeEnum.PLAYWRIGHT);
-      for (const nonPlaywrightSelector of nonPlaywrightSelectors) {
-        let elements: Element[] = [];
-        try {
-          if (nonPlaywrightSelector.type === SelectorTypeEnum.XPATH) elements = getElementsByXPath(root, nonPlaywrightSelector.value);
-          else elements = this._evaluator._queryCSS({ scope: root as Document | Element, pierceShadow: shadow }, nonPlaywrightSelector.value);
-        } catch (e) { }
-
-        if (elements && elements.length) {
-          this._evaluator.end();
-          (window as any)[uuid] = { selector: nonPlaywrightSelector.value, selectorType: nonPlaywrightSelector.type };
-          return elements;
         }
-      }
 
-      this._evaluator.end();
-      return [];
+        this._evaluator.end();
+        return [];
+      } catch (err) { throw new Error(encodedSelectors); }
     };
 
     return {
