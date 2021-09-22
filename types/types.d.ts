@@ -12757,6 +12757,11 @@ export interface LaunchOptions {
 
 export interface ConnectOverCDPOptions {
   /**
+   * For crusher, set this as "electron-webview"
+   */
+  customBrowserName?: string;
+
+  /**
    * Deprecated, use the first argument instead. Optional.
    */
   endpointURL?: string;

@@ -421,6 +421,7 @@ export type BrowserTypeLaunchPersistentContextResult = {
   context: BrowserContextChannel,
 };
 export type BrowserTypeConnectOverCDPParams = {
+  customBrowserName?: string,
   sdkLanguage: string,
   endpointURL: string,
   headers?: NameValue[],
@@ -428,6 +429,7 @@ export type BrowserTypeConnectOverCDPParams = {
   timeout?: number,
 };
 export type BrowserTypeConnectOverCDPOptions = {
+  customBrowserName?: string,
   headers?: NameValue[],
   slowMo?: number,
   timeout?: number,

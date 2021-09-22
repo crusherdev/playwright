@@ -256,6 +256,7 @@ export function createScheme(tChannel: (name: string) => Validator): Scheme {
     slowMo: tOptional(tNumber),
   });
   scheme.BrowserTypeConnectOverCDPParams = tObject({
+    customBrowserName: tOptional(tString),
     sdkLanguage: tString,
     endpointURL: tString,
     headers: tOptional(tArray(tType('NameValue'))),

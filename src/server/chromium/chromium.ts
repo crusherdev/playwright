@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Copyright 2017 Google Inc. All rights reserved.
  * Modifications copyright (c) Microsoft Corporation.
@@ -48,7 +49,8 @@ export class Chromium extends BrowserType {
       this._devtools = this._createDevTools();
   }
 
-  async connectOverCDP(metadata: CallMetadata, endpointURL: string, options: { slowMo?: number, sdkLanguage: string, headers?: types.HeadersArray }, timeout?: number) {
+  async connectOverCDP(metadata: CallMetadata, endpointURL: string, options: { customBrowserName?: string, slowMo?: number, sdkLanguage: string, headers?: types.HeadersArray }, timeout?: number) {
+    console.log('Connecting over cdp', options);
     const controller = new ProgressController(metadata, this);
     controller.setLogName('browser');
     const browserLogsCollector = new RecentLogsCollector();
@@ -73,7 +75,7 @@ export class Chromium extends BrowserType {
       const browserOptions: BrowserOptions = {
         ...this._playwrightOptions,
         slowMo: options.slowMo,
-        name: 'chromium',
+        name: options.customBrowserName || 'chromium',
         isChromium: true,
         persistent: { sdkLanguage: options.sdkLanguage, noDefaultViewport: true },
         browserProcess,

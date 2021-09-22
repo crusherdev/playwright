@@ -33,6 +33,7 @@ export interface BrowserProcess {
 }
 
 export type PlaywrightOptions = {
+  customBrowserName?: string;
   rootSdkObject: SdkObject,
   selectors: Selectors,
   loopbackProxyOverride?: () => string,

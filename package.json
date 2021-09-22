@@ -57,6 +57,7 @@
     "@babel/plugin-syntax-optional-catch-binding": "^7.8.3",
     "@babel/plugin-transform-modules-commonjs": "^7.14.5",
     "@babel/preset-typescript": "^7.14.5",
+    "axios": "^0.21.4",
     "colors": "^1.4.0",
     "commander": "^6.1.0",
     "debug": "^4.1.1",

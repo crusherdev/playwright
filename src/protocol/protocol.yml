@@ -423,6 +423,7 @@ BrowserType:
 
     connectOverCDP:
       parameters:
+        customBrowserName: string?
         sdkLanguage: string
         endpointURL: string
         headers:

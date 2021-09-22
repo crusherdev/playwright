@@ -73,6 +73,7 @@ export type LaunchOptions = LaunchOptionsBase & FirefoxUserPrefs;
 export type LaunchPersistentContextOptions = Omit<LaunchOptionsBase & BrowserContextOptions, 'storageState'>;
 
 export type ConnectOptions = {
+  customBrowserName?: string,
   wsEndpoint: string,
   headers?: { [key: string]: string; };
   _forwardPorts?: number[];

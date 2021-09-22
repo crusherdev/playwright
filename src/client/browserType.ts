@@ -254,6 +254,7 @@ export class BrowserType extends ChannelOwner<channels.BrowserTypeChannel, chann
       const paramsHeaders = Object.assign({'User-Agent': getUserAgent()}, params.headers);
       const headers = paramsHeaders ? headersObjectToArray(paramsHeaders) : undefined;
       const result = await channel.connectOverCDP({
+        customBrowserName: params.customBrowserName,
         sdkLanguage: 'javascript',
         endpointURL,
         headers,

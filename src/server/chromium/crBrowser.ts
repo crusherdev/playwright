@@ -151,7 +151,7 @@ export class CRBrowser extends Browser {
       return;
     }
 
-    if (targetInfo.type === 'page') {
+    if (targetInfo.type === 'page' || targetInfo.type === 'webview') {
       const opener = targetInfo.openerId ? this._crPages.get(targetInfo.openerId) || null : null;
       const crPage = new CRPage(session, targetInfo.targetId, context, opener, true, false);
       this._crPages.set(targetInfo.targetId, crPage);
@@ -310,7 +310,7 @@ export class CRBrowserContext extends BrowserContext {
   async _initialize() {
     assert(!Array.from(this._browser._crPages.values()).some(page => page._browserContext === this));
     const promises: Promise<any>[] = [ super._initialize() ];
-    if (this._browser.options.name !== 'electron' && this._browser.options.name !== 'clank') {
+    if (this._browser.options.name !== 'electron' && this._browser.options.name !== 'electron-webview' && this._browser.options.name !== 'clank') {
       promises.push(this._browser._session.send('Browser.setDownloadBehavior', {
         behavior: this._options.acceptDownloads ? 'allowAndName' : 'deny',
         browserContextId: this._browserContextId,

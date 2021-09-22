@@ -140,6 +140,11 @@ Connecting over the Chrome DevTools Protocol is only supported for Chromium-base
 
 A CDP websocket endpoint or http url to connect to. For example `http://localhost:9222/` or `ws://127.0.0.1:9222/devtools/browser/387adf4c-243f-4051-a181-46798f4a46f4`.
 
+### option: BrowserType.connectOverCDP.customBrowserName
+* langs: java, js
+- `customBrowserName` <[string]>
+
+For crusher, set this as "electron-webview"
 ### option: BrowserType.connectOverCDP.endpointURL
 * langs: js
 - `endpointURL` <[string]>
