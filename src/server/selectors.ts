@@ -75,6 +75,7 @@ export class Selectors {
     const handle = await injectedScript.evaluateHandle((injected, { parsed, scope, strict }) => {
       return injected.querySelector(parsed, scope || document, strict);
     }, { parsed: info.parsed, scope, strict: info.strict });
+
     const elementHandle = handle.asElement() as dom.ElementHandle<Element> | null;
     if (!elementHandle) {
       handle.dispose();

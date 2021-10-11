@@ -125,7 +125,7 @@ export class Page extends ChannelOwner<channels.PageChannel, channels.PageInitia
     });
     this._channel.on('fileChooser', ({ element, isMultiple }) => this.emit(Events.Page.FileChooser, new FileChooser(this, ElementHandle.from(element), isMultiple)));
     this._channel.on('frameAttached', ({ frame }) => this._onFrameAttached(Frame.from(frame)));
-    this._channel.on('frameDetached', ({ frame }) => this._onFrameDetached(Frame.from(frame)));
+    this._channel.on('frameDetached', ({ frame }) => { return frame ? this._onFrameDetached(Frame.from(frame)) : null; });
     this._channel.on('load', () => this.emit(Events.Page.Load, this));
     this._channel.on('pageError', ({ error }) => this.emit(Events.Page.PageError, parseError(error)));
     this._channel.on('route', ({ route, request }) => this._onRoute(Route.from(route), Request.from(request)));
