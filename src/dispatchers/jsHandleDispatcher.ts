@@ -56,6 +56,15 @@ export class JSHandleDispatcher extends Dispatcher<js.JSHandle, channels.JSHandl
     return { value: serializeResult(await this._object.jsonValue()) };
   }
 
+
+  async getObjectId(): Promise<any> {
+    return { value: serializeResult(this._object.getObjectId()) };
+  }
+
+  async getNodeId(): Promise<any> {
+    return { value: serializeResult(await this._object.getNodeId()) };
+  }
+
   async dispose() {
     await this._object.dispose();
   }

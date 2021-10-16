@@ -73,6 +73,18 @@ export class JSHandle<T = any> extends ChannelOwner<channels.JSHandleChannel, ch
     return null as any;
   }
 
+  async getObjectId(): Promise<any> {
+    return this._wrapApiCall(async (channel: channels.JSHandleChannel) => {
+      return parseResult((await channel.getObjectId()).value);
+    });
+  }
+
+  async getNodeId(): Promise<any> {
+    return this._wrapApiCall(async (channel: channels.JSHandleChannel) => {
+      return parseResult((await channel.getNodeId()).value);
+    });
+  }
+
   async dispose() {
     return this._wrapApiCall(async (channel: channels.JSHandleChannel) => {
       return await channel.dispose();

@@ -1687,6 +1687,14 @@ JSHandle:
       returns:
         value: SerializedValue
 
+    getObjectId:
+      returns:
+        value: SerializedValue
+
+    getNodeId:
+      returns:
+        value: SerializedValue
+
   events:
 
     previewUpdated:

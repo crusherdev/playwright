@@ -835,6 +835,10 @@ export function createScheme(tChannel: (name: string) => Validator): Scheme {
   scheme.ElementHandleGetPropertyParams = tType('JSHandleGetPropertyParams');
   scheme.JSHandleJsonValueParams = tOptional(tObject({}));
   scheme.ElementHandleJsonValueParams = tType('JSHandleJsonValueParams');
+  scheme.JSHandleGetObjectIdParams = tOptional(tObject({}));
+  scheme.ElementHandleGetObjectIdParams = tType('JSHandleGetObjectIdParams');
+  scheme.JSHandleGetNodeIdParams = tOptional(tObject({}));
+  scheme.ElementHandleGetNodeIdParams = tType('JSHandleGetNodeIdParams');
   scheme.ElementHandleEvalOnSelectorParams = tObject({
     selector: tString,
     strict: tOptional(tBoolean),

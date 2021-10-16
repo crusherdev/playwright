@@ -95,7 +95,15 @@ export class CRExecutionContext implements js.ExecutionContextDelegate {
   }
 
   createHandle(context: js.ExecutionContext, remoteObject: Protocol.Runtime.RemoteObject): js.JSHandle {
-    return new js.JSHandle(context, remoteObject.subtype || remoteObject.type, renderPreview(remoteObject), remoteObject.objectId, potentiallyUnserializableValue(remoteObject));
+    const isNode = remoteObject.type && remoteObject.type === 'object';
+    return new js.JSHandle(context, remoteObject.subtype || remoteObject.type, renderPreview(remoteObject), remoteObject.objectId, potentiallyUnserializableValue(remoteObject), isNode);
+  }
+
+  async getNodeId(context: js.ExecutionContext, objectId: Protocol.Runtime.RemoteObjectId): Promise<string | null> {
+    const response = await this._client.send('DOM.describeNode', {
+      objectId
+    });
+    return response && response.node ? response.node.backendNodeId + '' : null;
   }
 
   async releaseHandle(objectId: js.ObjectId): Promise<void> {

@@ -49,6 +49,7 @@ export interface ExecutionContextDelegate {
   evaluateWithArguments(expression: string, returnByValue: boolean, utilityScript: JSHandle<any>, values: any[], objectIds: ObjectId[]): Promise<any>;
   getProperties(context: ExecutionContext, objectId: ObjectId): Promise<Map<string, JSHandle>>;
   createHandle(context: ExecutionContext, remoteObject: RemoteObject): JSHandle;
+  getNodeId(context: ExecutionContext, objectId: ObjectId): Promise<string | null>;
   releaseHandle(objectId: ObjectId): Promise<void>;
 }
 
@@ -89,6 +90,10 @@ export class ExecutionContext extends SdkObject {
     return await this._delegate.rawEvaluateJSON(expression);
   }
 
+  async getNodeId(objectId: ObjectId) {
+    return this._delegate.getNodeId(this, objectId);
+  }
+
   async doSlowMo() {
     // overridden in FrameExecutionContext
   }
@@ -100,16 +105,18 @@ export class JSHandle<T = any> extends SdkObject {
   readonly _objectId: ObjectId | undefined;
   readonly _value: any;
   private _objectType: string;
+  private _isNode: boolean;
   protected _preview: string;
   private _previewCallback: ((preview: string) => void) | undefined;
 
-  constructor(context: ExecutionContext, type: string, preview: string | undefined, objectId?: ObjectId, value?: any) {
+  constructor(context: ExecutionContext, type: string, preview: string | undefined, objectId?: ObjectId, value?: any, isNode: boolean = false) {
     super(context, 'handle');
     this._context = context;
     this._objectId = objectId;
     this._value = value;
     this._objectType = type;
     this._preview = this._objectId ? preview || `JSHandle@${this._objectType}` : String(value);
+    this._isNode = isNode;
   }
 
   callFunctionNoReply(func: Function, arg: any) {
@@ -162,6 +169,14 @@ export class JSHandle<T = any> extends SdkObject {
 
   asElement(): dom.ElementHandle | null {
     return null;
+  }
+
+  getObjectId(): ObjectId | undefined {
+    return this._objectId;
+  }
+
+  async getNodeId(): Promise<ObjectId | null> {
+    return this._context.getNodeId(this._objectId!);
   }
 
   dispose() {

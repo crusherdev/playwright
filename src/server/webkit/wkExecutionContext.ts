@@ -33,6 +33,9 @@ export class WKExecutionContext implements js.ExecutionContextDelegate {
       this._contextDestroyedCallback = resolve;
     });
   }
+  getNodeId(context: js.ExecutionContext, objectId: string): Promise<string | null> {
+    throw new Error('Method not implemented.');
+  }
 
   _dispose() {
     this._contextDestroyedCallback();

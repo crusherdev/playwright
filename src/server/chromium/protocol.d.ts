@@ -158,8 +158,8 @@ export module Protocol {
        */
       backendDOMNodeId?: DOM.BackendNodeId;
     }
-    
-    
+
+
     /**
      * Disables the accessibility domain.
      */
@@ -263,7 +263,7 @@ including nodes that are ignored for accessibility.
       nodes: AXNode[];
     }
   }
-  
+
   export module Animation {
     /**
      * Animation instance.
@@ -382,7 +382,7 @@ animation/transition.
        */
       easing: string;
     }
-    
+
     /**
      * Event for when an animation has been cancelled.
      */
@@ -410,7 +410,7 @@ animation/transition.
        */
       animation: Animation;
     }
-    
+
     /**
      * Disables animation domain notifications.
      */
@@ -538,7 +538,7 @@ animation/transition.
     export type setTimingReturnValue = {
     }
   }
-  
+
   export module ApplicationCache {
     /**
      * Detailed application cache resource information.
@@ -599,7 +599,7 @@ animation/transition.
        */
       status: number;
     }
-    
+
     export type applicationCacheStatusUpdatedPayload = {
       /**
        * Identifier of the frame containing document whose application cache updated status.
@@ -617,7 +617,7 @@ animation/transition.
     export type networkStateUpdatedPayload = {
       isNowOnline: boolean;
     }
-    
+
     /**
      * Enables application cache domain notifications.
      */
@@ -669,7 +669,7 @@ associated with some application cache.
       manifestURL: string;
     }
   }
-  
+
   /**
    * Audits domain allows investigation of page violations and possible improvements.
    */
@@ -946,11 +946,11 @@ exception, CDP message, etc.) is referencing this issue.
        */
       issueId?: IssueId;
     }
-    
+
     export type issueAddedPayload = {
       issue: InspectorIssue;
     }
-    
+
     /**
      * Returns the response body and size if it were re-encoded with the specified settings. Only
 applies to images.
@@ -1015,7 +1015,7 @@ using Audits.issueAdded event.
     export type checkContrastReturnValue = {
     }
   }
-  
+
   /**
    * Defines events for background web platform features.
    */
@@ -1063,7 +1063,7 @@ API.
        */
       eventMetadata: EventMetadata[];
     }
-    
+
     /**
      * Called when the recording state for the service has been updated.
      */
@@ -1078,7 +1078,7 @@ events afterwards if enabled and recording.
     export type backgroundServiceEventReceivedPayload = {
       backgroundServiceEvent: BackgroundServiceEvent;
     }
-    
+
     /**
      * Enables event updates for the service.
      */
@@ -1113,7 +1113,7 @@ events afterwards if enabled and recording.
     export type clearEventsReturnValue = {
     }
   }
-  
+
   /**
    * The Browser domain defines methods and events for browser managing.
    */
@@ -1221,7 +1221,7 @@ Note that userVisibleOnly = true is the only currently supported type.
        */
       buckets: Bucket[];
     }
-    
+
     /**
      * Fired when page is about to start a download.
      */
@@ -1264,7 +1264,7 @@ Note that userVisibleOnly = true is the only currently supported type.
        */
       state: "inProgress"|"completed"|"canceled";
     }
-    
+
     /**
      * Set permission settings for given origin.
      */
@@ -1529,7 +1529,7 @@ with 'left', 'top', 'width' or 'height'. Leaves unspecified fields unchanged.
     export type executeBrowserCommandReturnValue = {
     }
   }
-  
+
   /**
    * This domain exposes CSS read/write operations. All CSS objects (stylesheets, rules, and styles)
 have an associated `id` used in subsequent operations on the related object. Each object type has
@@ -2082,7 +2082,7 @@ stylesheet rules) this rule came from.
        */
       text: string;
     }
-    
+
     /**
      * Fires whenever a web font is updated.  A non-empty font parameter indicates a successfully loaded
 web font
@@ -2122,7 +2122,7 @@ resized.) The current implementation considers only viewport-dependent media fea
        */
       styleSheetId: StyleSheetId;
     }
-    
+
     /**
      * Inserts a new rule with the given `ruleText` in a stylesheet with given `styleSheetId`, at the
 position specified by `location`.
@@ -2484,7 +2484,7 @@ instrumentation)
     export type setLocalFontsEnabledReturnValue = {
     }
   }
-  
+
   export module CacheStorage {
     /**
      * Unique identifier of the Cache object.
@@ -2561,8 +2561,8 @@ instrumentation)
        */
       body: binary;
     }
-    
-    
+
+
     /**
      * Deletes a cache.
      */
@@ -2660,7 +2660,7 @@ is the count of all entries from this storage.
       returnCount: number;
     }
   }
-  
+
   /**
    * A domain for interacting with Cast, Presentation API, and Remote Playback API
 functionalities.
@@ -2675,7 +2675,7 @@ session on the sink.
        */
       session?: string;
     }
-    
+
     /**
      * This is fired whenever the list of available sinks changes. A sink is a
 device or a software surface that you can cast to.
@@ -2690,7 +2690,7 @@ device or a software surface that you can cast to.
     export type issueUpdatedPayload = {
       issueMessage: string;
     }
-    
+
     /**
      * Starts observing for sinks that can be used for tab mirroring, and if set,
 sinks compatible with |presentationUrl| as well. When sinks are found, a
@@ -2736,7 +2736,7 @@ sink via Presentation API, Remote Playback API, or Cast SDK.
     export type stopCastingReturnValue = {
     }
   }
-  
+
   /**
    * This domain exposes DOM read/write operations. Each DOM Node is represented with its mirror object
 that has an `id`. This `id` can be used to get additional information on the Node, resolve it into
@@ -3011,7 +3011,7 @@ The property is always undefined now.
        */
       value: string;
     }
-    
+
     /**
      * Fired when `Element`'s attribute is modified.
      */
@@ -3190,7 +3190,7 @@ most of the calls requesting node ids.
        */
       root: Node;
     }
-    
+
     /**
      * Collects class names for the node with given id and all of it's child nodes.
      */
@@ -4011,7 +4011,7 @@ otherwise it will find the nearest container regardless of its container name.
       nodeId?: NodeId;
     }
   }
-  
+
   /**
    * DOM debugging allows setting breakpoints on particular DOM operations and events. JavaScript
 execution will stop on these operations as if there was a regular breakpoint set.
@@ -4070,8 +4070,8 @@ execution will stop on these operations as if there was a regular breakpoint set
        */
       backendNodeId?: DOM.BackendNodeId;
     }
-    
-    
+
+
     /**
      * Returns event listeners of the given object.
      */
@@ -4214,7 +4214,7 @@ EventTarget.
     export type setXHRBreakpointReturnValue = {
     }
   }
-  
+
   /**
    * This domain facilitates obtaining document snapshots with DOM, layout, and style information.
    */
@@ -4650,8 +4650,8 @@ represented as a surrogate pair in UTF-16 have length 2.
        */
       length: number[];
     }
-    
-    
+
+
     /**
      * Disables DOM snapshot agent for the given page.
      */
@@ -4747,7 +4747,7 @@ The final text color opacity is computed based on the opacity of all overlapping
       strings: string[];
     }
   }
-  
+
   /**
    * Query and modify DOM storage.
    */
@@ -4769,7 +4769,7 @@ The final text color opacity is computed based on the opacity of all overlapping
      * DOM Storage item.
      */
     export type Item = string[];
-    
+
     export type domStorageItemAddedPayload = {
       storageId: StorageId;
       key: string;
@@ -4788,7 +4788,7 @@ The final text color opacity is computed based on the opacity of all overlapping
     export type domStorageItemsClearedPayload = {
       storageId: StorageId;
     }
-    
+
     export type clearParameters = {
       storageId: StorageId;
     }
@@ -4828,7 +4828,7 @@ The final text color opacity is computed based on the opacity of all overlapping
     export type setDOMStorageItemReturnValue = {
     }
   }
-  
+
   export module Database {
     /**
      * Unique identifier of Database object.
@@ -4868,11 +4868,11 @@ The final text color opacity is computed based on the opacity of all overlapping
        */
       code: number;
     }
-    
+
     export type addDatabasePayload = {
       database: Database;
     }
-    
+
     /**
      * Disables database tracking, prevents database events from being sent to the client.
      */
@@ -4903,10 +4903,10 @@ The final text color opacity is computed based on the opacity of all overlapping
       tableNames: string[];
     }
   }
-  
+
   export module DeviceOrientation {
-    
-    
+
+
     /**
      * Clears the overridden Device Orientation.
      */
@@ -4934,7 +4934,7 @@ The final text color opacity is computed based on the opacity of all overlapping
     export type setDeviceOrientationOverrideReturnValue = {
     }
   }
-  
+
   /**
    * This domain emulates different environments for the page.
    */
@@ -5004,12 +5004,12 @@ Missing optional values will be filled in by the target with what it would norma
      * Enum of image types that can be disabled.
      */
     export type DisabledImageType = "avif"|"jxl"|"webp";
-    
+
     /**
      * Notification sent after the virtual time budget for the current VirtualTimePolicy has run out.
      */
     export type virtualTimeBudgetExpiredPayload = void;
-    
+
     /**
      * Tells whether emulation is supported.
      */
@@ -5390,7 +5390,7 @@ on Android.
     export type setUserAgentOverrideReturnValue = {
     }
   }
-  
+
   /**
    * This domain provides experimental commands only supported in headless mode.
    */
@@ -5408,7 +5408,7 @@ on Android.
        */
       quality?: number;
     }
-    
+
     /**
      * Issued when the target starts or stops needing BeginFrames.
 Deprecated. Issue beginFrame unconditionally instead and use result from
@@ -5420,7 +5420,7 @@ beginFrame to detect whether the frames were suppressed.
        */
       needsBeginFrames: boolean;
     }
-    
+
     /**
      * Sends a BeginFrame to the target and returns when the frame was completed. Optionally captures a
 screenshot from the resulting frame. Requires that the target was created with enabled
@@ -5477,7 +5477,7 @@ display. Reported for diagnostic uses, may be removed in the future.
     export type enableReturnValue = {
     }
   }
-  
+
   /**
    * Input/Output operations for streams produced by DevTools.
    */
@@ -5487,8 +5487,8 @@ display. Reported for diagnostic uses, may be removed in the future.
 `&lt;uuid&gt` is an UUID of a Blob.
      */
     export type StreamHandle = string;
-    
-    
+
+
     /**
      * Close the stream, discard any temporary backing storage.
      */
@@ -5548,7 +5548,7 @@ following the last read). Some types of streams may only support sequential read
       uuid: string;
     }
   }
-  
+
   export module IndexedDB {
     /**
      * Database with an array of object stores.
@@ -5690,8 +5690,8 @@ requires the version number to be 'unsigned long long')
        */
       array?: string[];
     }
-    
-    
+
+
     /**
      * Clears all entries from an object store.
      */
@@ -5861,7 +5861,7 @@ is true.
       databaseNames: string[];
     }
   }
-  
+
   export module Input {
     export interface TouchPoint {
       /**
@@ -5947,7 +5947,7 @@ text, HTML markup or any other data.
        */
       dragOperationsMask: number;
     }
-    
+
     /**
      * Emitted only when `Input.setInterceptDrags` is enabled. Use this data with `Input.dispatchDragEvent` to
 restore normal drag and drop behavior.
@@ -5955,7 +5955,7 @@ restore normal drag and drop behavior.
     export type dragInterceptedPayload = {
       data: DragData;
     }
-    
+
     /**
      * Dispatches a drag event into the page.
      */
@@ -6377,9 +6377,9 @@ for the preferred input type).
     export type synthesizeTapGestureReturnValue = {
     }
   }
-  
+
   export module Inspector {
-    
+
     /**
      * Fired when remote debugging connection is about to be terminated. Contains detach reason.
      */
@@ -6397,7 +6397,7 @@ for the preferred input type).
      * Fired when debugging target has reloaded after crash
      */
     export type targetReloadedAfterCrashPayload = void;
-    
+
     /**
      * Disables inspector domain notifications.
      */
@@ -6413,7 +6413,7 @@ for the preferred input type).
     export type enableReturnValue = {
     }
   }
-  
+
   export module LayerTree {
     /**
      * Unique Layer identifier.
@@ -6548,7 +6548,7 @@ transform/scrolling purposes only.
      * Array of timings, one per paint step.
      */
     export type PaintProfile = number[];
-    
+
     export type layerPaintedPayload = {
       /**
        * The id of the painted layer.
@@ -6565,7 +6565,7 @@ transform/scrolling purposes only.
        */
       layers?: Layer[];
     }
-    
+
     /**
      * Provides the reasons why the given layer was composited.
      */
@@ -6707,7 +6707,7 @@ transform/scrolling purposes only.
       commandLog: { [key: string]: string }[];
     }
   }
-  
+
   /**
    * Provides access to log entries.
    */
@@ -6770,7 +6770,7 @@ transform/scrolling purposes only.
        */
       threshold: number;
     }
-    
+
     /**
      * Issued when new message was logged.
      */
@@ -6780,7 +6780,7 @@ transform/scrolling purposes only.
        */
       entry: LogEntry;
     }
-    
+
     /**
      * Clears the log.
      */
@@ -6822,7 +6822,7 @@ transform/scrolling purposes only.
     export type stopViolationsReportReturnValue = {
     }
   }
-  
+
   export module Memory {
     /**
      * Memory pressure level.
@@ -6874,8 +6874,8 @@ or hexadecimal (0x prefixed) string.
        */
       size: number;
     }
-    
-    
+
+
     export type getDOMCountersParameters = {
     }
     export type getDOMCountersReturnValue = {
@@ -6966,7 +6966,7 @@ collected since browser process startup.
       profile: SamplingProfile;
     }
   }
-  
+
   /**
    * Network domain allows tracking network activities of the page. It exposes information about http,
 file, data and other requests and responses, their headers, bodies, timing, etc.
@@ -7906,7 +7906,7 @@ CORB and streaming.
       disableCache: boolean;
       includeCredentials: boolean;
     }
-    
+
     /**
      * Fired when data chunk was received over the network.
      */
@@ -8511,7 +8511,7 @@ after webbundle was parsed.
        */
       bundleRequestId?: RequestId;
     }
-    
+
     /**
      * Sets a list of content encodings that will be accepted. Empty list means no encoding is accepted.
      */
@@ -9048,7 +9048,7 @@ continueInterceptedRequest call.
       resource: LoadNetworkResourcePageResult;
     }
   }
-  
+
   /**
    * This domain provides various functionality related to drawing atop the inspected page.
    */
@@ -9399,7 +9399,7 @@ continueInterceptedRequest call.
       containerBorder?: LineStyle;
     }
     export type InspectMode = "searchForNode"|"searchForUAShadowDOM"|"captureAreaScreenshot"|"showDistances"|"none";
-    
+
     /**
      * Fired when the node should be inspected. This happens after call to `setInspectMode` or when
 user manually inspects an element.
@@ -9429,7 +9429,7 @@ user manually inspects an element.
      * Fired when user cancels the inspect mode.
      */
     export type inspectModeCanceledPayload = void;
-    
+
     /**
      * Disables domain notifications.
      */
@@ -9804,7 +9804,7 @@ Backend then generates 'inspectNodeRequested' event upon element selection.
     export type setShowHingeReturnValue = {
     }
   }
-  
+
   /**
    * Actions and events related to the inspected page belong to the page domain.
    */
@@ -10309,7 +10309,7 @@ Example URLs: http://www.google.com/file.html -> "google.com"
        */
       reason: BackForwardCacheNotRestoredReason;
     }
-    
+
     export type domContentEventFiredPayload = {
       timestamp: Network.MonotonicTime;
     }
@@ -10652,7 +10652,7 @@ if Page.setGenerateCompilationCache is enabled.
        */
       data: binary;
     }
-    
+
     /**
      * Deprecated, please use addScriptToEvaluateOnNewDocument instead.
      */
@@ -11536,7 +11536,7 @@ Instead, a protocol event `Page.fileChooserOpened` is emitted.
     export type setInterceptFileChooserDialogReturnValue = {
     }
   }
-  
+
   export module Performance {
     /**
      * Run-time execution metric.
@@ -11551,7 +11551,7 @@ Instead, a protocol event `Page.fileChooserOpened` is emitted.
        */
       value: number;
     }
-    
+
     /**
      * Current values of the metrics.
      */
@@ -11565,7 +11565,7 @@ Instead, a protocol event `Page.fileChooserOpened` is emitted.
        */
       title: string;
     }
-    
+
     /**
      * Disable collecting and reporting metrics.
      */
@@ -11609,7 +11609,7 @@ this method while metrics collection is enabled returns an error.
       metrics: Metric[];
     }
   }
-  
+
   /**
    * Reporting of performance timeline events, as specified in
 https://w3c.github.io/performance-timeline/#dom-performanceobserver.
@@ -11677,14 +11677,14 @@ This determines which of the optional "details" fiedls is present.
       lcpDetails?: LargestContentfulPaint;
       layoutShiftDetails?: LayoutShift;
     }
-    
+
     /**
      * Sent when a performance timeline event is added. See reportPerformanceTimeline method.
      */
     export type timelineEventAddedPayload = {
       event: TimelineEvent;
     }
-    
+
     /**
      * Previously buffered events would be reported before method returns.
 See also: timelineEventAdded
@@ -11702,7 +11702,7 @@ Note that not all types exposed to the web platform are currently supported.
     export type enableReturnValue = {
     }
   }
-  
+
   /**
    * Security
    */
@@ -11900,7 +11900,7 @@ https://www.w3.org/TR/mixed-content/#categories
 request and cancel will cancel the request.
      */
     export type CertificateErrorAction = "continue"|"cancel";
-    
+
     /**
      * There is a certificate error. If overriding certificate errors is enabled, then it should be
 handled with the `handleCertificateError` command. Note: this event does not fire if the
@@ -11956,7 +11956,7 @@ certificate errors at the same time.
        */
       summary?: string;
     }
-    
+
     /**
      * Disables tracking security state changes.
      */
@@ -12010,7 +12010,7 @@ be handled by the DevTools client and should be answered with `handleCertificate
     export type setOverrideCertificateErrorsReturnValue = {
     }
   }
-  
+
   export module ServiceWorker {
     export type RegistrationID = string;
     /**
@@ -12055,7 +12055,7 @@ For cached script it is the last time the cache entry was validated.
       lineNumber: number;
       columnNumber: number;
     }
-    
+
     export type workerErrorReportedPayload = {
       errorMessage: ServiceWorkerErrorMessage;
     }
@@ -12065,7 +12065,7 @@ For cached script it is the last time the cache entry was validated.
     export type workerVersionUpdatedPayload = {
       versions: ServiceWorkerVersion[];
     }
-    
+
     export type deliverPushMessageParameters = {
       origin: string;
       registrationId: RegistrationID;
@@ -12136,7 +12136,7 @@ For cached script it is the last time the cache entry was validated.
     export type updateRegistrationReturnValue = {
     }
   }
-  
+
   export module Storage {
     /**
      * Enum of possible storage types.
@@ -12163,7 +12163,7 @@ Tokens from that issuer.
       issuerOrigin: string;
       count: number;
     }
-    
+
     /**
      * A cache's contents have been modified.
      */
@@ -12212,7 +12212,7 @@ Tokens from that issuer.
        */
       origin: string;
     }
-    
+
     /**
      * Clears storage for origin.
      */
@@ -12384,7 +12384,7 @@ Leaves other stored data, including the issuer's Redemption Records, intact.
       didDeleteTokens: boolean;
     }
   }
-  
+
   /**
    * The SystemInfo domain defines methods and events for querying low-level system information.
    */
@@ -12559,8 +12559,8 @@ process since the process start.
        */
       cpuTime: number;
     }
-    
-    
+
+
     /**
      * Returns information about the system.
      */
@@ -12599,7 +12599,7 @@ supported.
       processInfo: ProcessInfo[];
     }
   }
-  
+
   /**
    * Supports additional targets discovery and allows to attach to them.
    */
@@ -12636,7 +12636,7 @@ supported.
       host: string;
       port: number;
     }
-    
+
     /**
      * Issued when attached to target because of auto-attach or `attachToTarget` command.
      */
@@ -12710,7 +12710,7 @@ issued multiple times per target if multiple sessions have been attached to it.
     export type targetInfoChangedPayload = {
       targetInfo: TargetInfo;
     }
-    
+
     /**
      * Activates (focuses) the target.
      */
@@ -12966,12 +12966,12 @@ and eventually retire it. See crbug.com/991325.
     export type setRemoteLocationsReturnValue = {
     }
   }
-  
+
   /**
    * The Tethering domain defines methods and events for browser port binding.
    */
   export module Tethering {
-    
+
     /**
      * Informs that port was successfully bound and got a specified connection id.
      */
@@ -12985,7 +12985,7 @@ and eventually retire it. See crbug.com/991325.
        */
       connectionId: string;
     }
-    
+
     /**
      * Request browser port binding.
      */
@@ -13009,7 +13009,7 @@ and eventually retire it. See crbug.com/991325.
     export type unbindReturnValue = {
     }
   }
-  
+
   export module Tracing {
     /**
      * Configuration for memory dump. Used only when "memory-infra" category is enabled.
@@ -13072,7 +13072,7 @@ supported on Chrome OS and uses the Perfetto system tracing service.
 specifies at least one non-Chrome data source; otherwise uses `chrome`.
      */
     export type TracingBackend = "auto"|"chrome"|"system";
-    
+
     export type bufferUsagePayload = {
       /**
        * A number in range [0..1] that indicates the used size of event buffer as a fraction of its
@@ -13119,7 +13119,7 @@ buffer wrapped around.
        */
       streamCompression?: StreamCompression;
     }
-    
+
     /**
      * Stop trace events collection.
      */
@@ -13218,7 +13218,7 @@ are ignored.
     export type startReturnValue = {
     }
   }
-  
+
   /**
    * A domain for letting clients substitute browser's network layer with client code.
    */
@@ -13297,7 +13297,7 @@ ProvideCredentials.
        */
       password?: string;
     }
-    
+
     /**
      * Issued when the domain is enabled and the request URL matches the
 specified filter. The request is paused until the client responds
@@ -13369,7 +13369,7 @@ contains AuthChallengeResponse.
        */
       authChallenge: AuthChallenge;
     }
-    
+
     /**
      * Disables the fetch domain.
      */
@@ -13531,7 +13531,7 @@ domain before body is received results in an undefined behavior.
       stream: IO.StreamHandle;
     }
   }
-  
+
   /**
    * This domain allows inspection of Web Audio API.
 https://webaudio.github.io/web-audio-api/
@@ -13646,7 +13646,7 @@ capacity and glitch may occur.
       minValue: number;
       maxValue: number;
     }
-    
+
     /**
      * Notifies that a new BaseAudioContext has been created.
      */
@@ -13743,7 +13743,7 @@ capacity and glitch may occur.
       destinationId: GraphObjectId;
       sourceOutputIndex?: number;
     }
-    
+
     /**
      * Enables the WebAudio domain and starts sending context lifetime events.
      */
@@ -13768,7 +13768,7 @@ capacity and glitch may occur.
       realtimeData: ContextRealtimeData;
     }
   }
-  
+
   /**
    * This domain allows configuring virtual authenticators to test the WebAuthn
 API.
@@ -13845,8 +13845,8 @@ See https://w3c.github.io/webauthn/#sctn-large-blob-extension
        */
       largeBlob?: binary;
     }
-    
-    
+
+
     /**
      * Enable the WebAuthn domain and start intercepting credential storage and
 retrieval with a virtual authenticator.
@@ -13946,7 +13946,7 @@ The default is true.
     export type setAutomaticPresenceSimulationReturnValue = {
     }
   }
-  
+
   /**
    * This domain allows detailed inspection of media elements
    */
@@ -14003,7 +14003,7 @@ use this instead. (crbug.com/1068454)
        */
       errorCode: string;
     }
-    
+
     /**
      * This can be called multiple times, and can be used to set / override /
 remove player properties. A null propValue indicates removal.
@@ -14042,7 +14042,7 @@ list of player ids and all events again.
     export type playersCreatedPayload = {
       players: PlayerId[];
     }
-    
+
     /**
      * Enables the Media domain
      */
@@ -14058,7 +14058,7 @@ list of player ids and all events again.
     export type disableReturnValue = {
     }
   }
-  
+
   /**
    * This domain is deprecated - use Runtime or Log instead.
    */
@@ -14092,7 +14092,7 @@ list of player ids and all events again.
        */
       column?: number;
     }
-    
+
     /**
      * Issued when new console message is added.
      */
@@ -14102,7 +14102,7 @@ list of player ids and all events again.
        */
       message: ConsoleMessage;
     }
-    
+
     /**
      * Does nothing.
      */
@@ -14126,7 +14126,7 @@ list of player ids and all events again.
     export type enableReturnValue = {
     }
   }
-  
+
   /**
    * Debugger domain exposes JavaScript debugging capabilities. It allows setting and removing
 breakpoints, stepping through execution, exploring stack traces, etc.
@@ -14278,7 +14278,7 @@ variables as its properties.
        */
       externalURL?: string;
     }
-    
+
     /**
      * Fired when breakpoint is resolved to an actual script and location.
      */
@@ -14484,7 +14484,7 @@ scripts upon enabling debugger.
        */
       embedderName?: string;
     }
-    
+
     /**
      * Continues execution until specific location is reached.
      */
@@ -15021,7 +15021,7 @@ before next pause.
     export type stepOverReturnValue = {
     }
   }
-  
+
   export module HeapProfiler {
     /**
      * Heap snapshot object id.
@@ -15073,7 +15073,7 @@ between startSampling and stopSampling.
       head: SamplingHeapProfileNode;
       samples: SamplingHeapProfileSample[];
     }
-    
+
     export type addHeapSnapshotChunkPayload = {
       chunk: string;
     }
@@ -15103,7 +15103,7 @@ then one or more heapStatsUpdate events will be sent before a new lastSeenObject
       finished?: boolean;
     }
     export type resetProfilesPayload = void;
-    
+
     /**
      * Enables console to refer to the node with given id via $x (see Command Line API for more details
 $x functions).
@@ -15214,7 +15214,7 @@ when the tracking is stopped.
     export type takeHeapSnapshotReturnValue = {
     }
   }
-  
+
   export module Profiler {
     /**
      * Profile node. Holds callsite information, execution statistics and child nodes.
@@ -15405,7 +15405,7 @@ profile startTime.
        */
       time: number;
     }
-    
+
     export type consoleProfileFinishedPayload = {
       id: string;
       /**
@@ -15452,7 +15452,7 @@ trigger collection of coverage data immediately at a certain point in time.
        */
       result: ScriptCoverage[];
     }
-    
+
     export type disableParameters = {
     }
     export type disableReturnValue = {
@@ -15621,7 +15621,7 @@ coverage needs to have started.
       result: RuntimeCallCounterInfo[];
     }
   }
-  
+
   /**
    * Runtime domain exposes JavaScript runtime by means of remote evaluation and mirror objects.
 Evaluation results are returned as mirror object that expose object type, string representation
@@ -16008,7 +16008,7 @@ allows to track cross-debugger calls. See `Runtime.StackTrace` and `Debugger.pau
       id: string;
       debuggerId?: UniqueDebuggerId;
     }
-    
+
     /**
      * Notification is issued every time when binding is called.
      */
@@ -16110,7 +16110,7 @@ call).
        */
       executionContextId?: ExecutionContextId;
     }
-    
+
     /**
      * Add handler to promise with given promise object id.
      */
@@ -16598,7 +16598,7 @@ unsubscribes current runtime agent from Runtime.bindingCalled notifications.
     export type removeBindingReturnValue = {
     }
   }
-  
+
   /**
    * This domain is deprecated.
    */
@@ -16616,8 +16616,8 @@ unsubscribes current runtime agent from Runtime.bindingCalled notifications.
        */
       version: string;
     }
-    
-    
+
+
     /**
      * Returns supported domains.
      */
@@ -16630,7 +16630,7 @@ unsubscribes current runtime agent from Runtime.bindingCalled notifications.
       domains: Domain[];
     }
   }
-  
+
   export interface Events {
     "Animation.animationCanceled": Animation.animationCanceledPayload;
     "Animation.animationCreated": Animation.animationCreatedPayload;

@@ -30,6 +30,10 @@ export class FFExecutionContext implements js.ExecutionContextDelegate {
     this._executionContextId = executionContextId;
   }
 
+  getNodeId(context: js.ExecutionContext, objectId: string): Promise<string | null> {
+    throw new Error('Method not implemented.');
+  }
+
   async rawEvaluateJSON(expression: string): Promise<any> {
     const payload = await this._session.send('Runtime.evaluate', {
       expression,

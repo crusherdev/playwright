@@ -1956,6 +1956,8 @@ export interface JSHandleChannel extends Channel {
   getPropertyList(params?: JSHandleGetPropertyListParams, metadata?: Metadata): Promise<JSHandleGetPropertyListResult>;
   getProperty(params: JSHandleGetPropertyParams, metadata?: Metadata): Promise<JSHandleGetPropertyResult>;
   jsonValue(params?: JSHandleJsonValueParams, metadata?: Metadata): Promise<JSHandleJsonValueResult>;
+  getObjectId(params?: JSHandleGetObjectIdParams, metadata?: Metadata): Promise<JSHandleGetObjectIdResult>;
+  getNodeId(params?: JSHandleGetNodeIdParams, metadata?: Metadata): Promise<JSHandleGetNodeIdResult>;
 }
 export type JSHandlePreviewUpdatedEvent = {
   preview: string,
@@ -2005,6 +2007,16 @@ export type JSHandleGetPropertyResult = {
 export type JSHandleJsonValueParams = {};
 export type JSHandleJsonValueOptions = {};
 export type JSHandleJsonValueResult = {
+  value: SerializedValue,
+};
+export type JSHandleGetObjectIdParams = {};
+export type JSHandleGetObjectIdOptions = {};
+export type JSHandleGetObjectIdResult = {
+  value: SerializedValue,
+};
+export type JSHandleGetNodeIdParams = {};
+export type JSHandleGetNodeIdOptions = {};
+export type JSHandleGetNodeIdResult = {
   value: SerializedValue,
 };
 
