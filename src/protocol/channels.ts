@@ -345,6 +345,10 @@ export type BrowserTypeLaunchPersistentContextParams = {
   strictSelectors?: boolean,
   userDataDir: string,
   slowMo?: number,
+  storageState?: {
+    cookies?: SetNetworkCookie[],
+    origins?: OriginStorage[],
+  },
 };
 export type BrowserTypeLaunchPersistentContextOptions = {
   channel?: string,
@@ -416,6 +420,10 @@ export type BrowserTypeLaunchPersistentContextOptions = {
   },
   strictSelectors?: boolean,
   slowMo?: number,
+  storageState?: {
+    cookies?: SetNetworkCookie[],
+    origins?: OriginStorage[],
+  },
 };
 export type BrowserTypeLaunchPersistentContextResult = {
   context: BrowserContextChannel,

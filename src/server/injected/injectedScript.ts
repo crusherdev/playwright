@@ -241,16 +241,20 @@ export class InjectedScript {
         const { uuid, selectors } = JSON.parse(decodeURIComponent(encodedSelectors)) as ICrusherSelectorInfo;
 
         this._evaluator.begin();
-        const playwrightSelector = selectors.find(selector => selector.type === SelectorTypeEnum.PLAYWRIGHT);
-        if (playwrightSelector) {
-          try {
-            const elements = this.querySelectorAll(this.parseSelector(playwrightSelector.value), root);
-            if (elements && elements.length) {
-              this._evaluator.end();
-              (window as any)[uuid] = { selector: playwrightSelector.value, selectorType: playwrightSelector.type };
-              return elements;
+        const playwrightSelectors = selectors.filter(selector => selector.type === SelectorTypeEnum.PLAYWRIGHT);
+
+        for (const playwrightSelector of playwrightSelectors) {
+          if (playwrightSelector) {
+            try {
+              const elements = this.querySelectorAll(this.parseSelector(playwrightSelector.value), root);
+              if (elements && elements.length) {
+                this._evaluator.end();
+                (window as any)[uuid] = { selector: playwrightSelector.value, selectorType: playwrightSelector.type };
+                return elements;
+              }
+            } catch (e) {
             }
-          } catch (e) { }
+          }
         }
 
         const nonPlaywrightSelectors = selectors.filter(selector => selector.type !== SelectorTypeEnum.PLAYWRIGHT);

@@ -254,6 +254,10 @@ export function createScheme(tChannel: (name: string) => Validator): Scheme {
     strictSelectors: tOptional(tBoolean),
     userDataDir: tString,
     slowMo: tOptional(tNumber),
+    storageState: tOptional(tObject({
+      cookies: tOptional(tArray(tType('SetNetworkCookie'))),
+      origins: tOptional(tArray(tType('OriginStorage'))),
+    })),
   });
   scheme.BrowserTypeConnectOverCDPParams = tObject({
     customBrowserName: tOptional(tString),

@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 /**
  * Copyright (c) Microsoft Corporation.
  *
@@ -70,6 +71,9 @@ export abstract class BrowserType extends SdkObject {
     const browser = await controller.run(progress => {
       return this._innerLaunchWithRetries(progress, options, persistent, helper.debugProtocolLogger(), userDataDir).catch(e => { throw this._rewriteStartupError(e); });
     }, TimeoutSettings.timeout(options));
+    console.log('Persistent config', options);
+    if ((options as any).storageState)
+      await browser._defaultContext!.setStorageState(metadata, (options as any).storageState);
     return browser._defaultContext!;
   }
 

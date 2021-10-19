@@ -108,6 +108,7 @@ export class BrowserType extends ChannelOwner<channels.BrowserTypeChannel, chann
         env: options.env ? envObjectToArray(options.env) : undefined,
         channel: options.channel,
         userDataDir,
+        storageState: contextParams.storageState ? contextParams.storageState : undefined,
       };
       const result = await channel.launchPersistentContext(persistentParams);
       const context = BrowserContext.from(result.context);

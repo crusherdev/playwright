@@ -418,6 +418,15 @@ BrowserType:
         $mixin2: ContextOptions
         userDataDir: string
         slowMo: number?
+        storageState:
+          type: object?
+          properties:
+            cookies:
+              type: array?
+              items: SetNetworkCookie
+            origins:
+              type: array?
+              items: OriginStorage
       returns:
         context: BrowserContext
 
