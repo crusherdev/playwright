@@ -97,6 +97,9 @@ export class RawMouseImpl implements input.RawMouse {
   }
 
   async move(x: number, y: number, button: types.MouseButton | 'none', buttons: Set<types.MouseButton>, modifiers: Set<types.KeyboardModifier>): Promise<void> {
+    x = x * parseFloat(process.env.CRUSHER_SCALE_FACTOR || "1");
+    y = y * parseFloat(process.env.CRUSHER_SCALE_FACTOR || "1");
+
     await this._dragManager.interceptDragCausedByMove(x, y, button, buttons, modifiers, async () => {
       await this._client.send('Input.dispatchMouseEvent', {
         type: 'mouseMoved',
@@ -109,8 +112,11 @@ export class RawMouseImpl implements input.RawMouse {
   }
 
   async down(x: number, y: number, button: types.MouseButton, buttons: Set<types.MouseButton>, modifiers: Set<types.KeyboardModifier>, clickCount: number): Promise<void> {
+    x = x * parseFloat(process.env.CRUSHER_SCALE_FACTOR || "1");
+    y = y * parseFloat(process.env.CRUSHER_SCALE_FACTOR || "1");
     if (this._dragManager.isDragging())
       return;
+   
     await this._client.send('Input.dispatchMouseEvent', {
       type: 'mousePressed',
       button,
@@ -122,6 +128,9 @@ export class RawMouseImpl implements input.RawMouse {
   }
 
   async up(x: number, y: number, button: types.MouseButton, buttons: Set<types.MouseButton>, modifiers: Set<types.KeyboardModifier>, clickCount: number): Promise<void> {
+    x = x * parseFloat(process.env.CRUSHER_SCALE_FACTOR || "1");
+    y = y * parseFloat(process.env.CRUSHER_SCALE_FACTOR || "1");
+
     if (this._dragManager.isDragging()) {
       await this._dragManager.drop(x, y, modifiers);
       return;
@@ -144,6 +153,9 @@ export class RawTouchscreenImpl implements input.RawTouchscreen {
     this._client = client;
   }
   async tap(x: number, y: number, modifiers: Set<types.KeyboardModifier>) {
+    x = x * parseFloat(process.env.CRUSHER_SCALE_FACTOR || "1");
+    y = y * parseFloat(process.env.CRUSHER_SCALE_FACTOR || "1");
+
     await Promise.all([
       this._client.send('Input.dispatchTouchEvent', {
         type: 'touchStart',
