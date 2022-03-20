@@ -54,6 +54,13 @@ class DebugLogger {
       this._debuggers.set(name, cachedDebugger);
       (cachedDebugger as any).color = debugLoggerColorMap[name];
     }
+
+    if(name === "api") {
+      if((global as any).customLogger) {
+        (global as any).customLogger.log(message);
+      }
+    }
+    
     cachedDebugger(message);
   }
 
