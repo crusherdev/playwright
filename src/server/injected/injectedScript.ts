@@ -261,7 +261,7 @@ export class InjectedScript {
         for (const nonPlaywrightSelector of nonPlaywrightSelectors) {
           let elements: Element[] = [];
           try {
-            if (nonPlaywrightSelector.type === SelectorTypeEnum.XPATH) elements = getElementsByXPath(root, nonPlaywrightSelector.value);
+            if (nonPlaywrightSelector.type === SelectorTypeEnum.XPATH) elements = getElementsByXPath(document.documentElement, nonPlaywrightSelector.value);
             else elements = this._evaluator._queryCSS({ scope: root as Document | Element, pierceShadow: shadow }, nonPlaywrightSelector.value);
           } catch (e) { }
 
