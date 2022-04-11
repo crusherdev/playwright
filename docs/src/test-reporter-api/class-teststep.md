@@ -17,10 +17,20 @@ Step category to differentiate steps with different origin and verbosity. Built-
 
 Running time in milliseconds.
 
-## property: TestStep.error
-- type: <[void]|[TestError]>
+## property: TestStep.location
+- type: ?<[Location]>
 
-An error thrown during the step execution, if any.
+Optional location in the source where the step is defined.
+
+## property: TestStep.error
+- type: ?<[TestError]>
+
+Error thrown during the step execution, if any.
+
+## property: TestStep.parent
+- type: ?<[TestStep]>
+
+Parent step, if any.
 
 ## property: TestStep.parent
 - type: <[void]|[TestStep]>

@@ -167,7 +167,7 @@ Documentation.Class = class {
     this.extends = extendsName;
     this.comment =  '';
     this.index();
-    const match = name.match(/(JS|CDP|[A-Z])(.*)/);
+    const match = name.match(/(API|JS|CDP|[A-Z])(.*)/);
     this.varName = match[1].toLowerCase() + match[2];
   }
 
@@ -312,6 +312,12 @@ Documentation.Member = class {
     };
     this.async = false;
     this.alias = name;
+    this.overloadIndex = 0;
+    if (name.includes('#')) {
+      const match = name.match(/(.*)#(.*)/);
+      this.alias = match[1];
+      this.overloadIndex = (+match[2]) - 1;
+    }
     /**
      * Param is true and option false
      * @type {Boolean}
@@ -442,7 +448,11 @@ Documentation.Type = class {
    * @return {Documentation.Type}
    */
   static fromParsedType(parsedType, inUnion = false) {
-    if (!inUnion && parsedType.union) {
+    if (!inUnion && !parsedType.unionName && isStringUnion(parsedType) ) {
+      throw new Error('Enum must have a name:\n' + JSON.stringify(parsedType, null, 2));
+    }
+
+    if (!inUnion && (parsedType.union || parsedType.unionName)) {
       const type = new Documentation.Type(parsedType.unionName || '');
       type.union = [];
       for (let t = parsedType; t; t = t.union) {
@@ -562,8 +572,6 @@ Documentation.Type = class {
  * @returns {boolean}
  */
 function isStringUnion(type) {
-  if (!type.union)
-    return false;
   while (type) {
     if (!type.name.startsWith('"') || !type.name.endsWith('"'))
       return false;

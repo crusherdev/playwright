@@ -85,25 +85,21 @@ class BrowserTypeExamples
 ```
 
 ## async method: BrowserType.connect
-* langs: js, python, java
 - returns: <[Browser]>
 
-This methods attaches Playwright to an existing browser instance.
+This method attaches Playwright to an existing browser instance.
 
 ### param: BrowserType.connect.wsEndpoint
-* langs: java, python, js
 - `wsEndpoint` <[string]>
 
 A browser websocket endpoint to connect to.
 
 ### option: BrowserType.connect.headers
-* langs: java, python, js
 - `headers` <[Object]<[string], [string]>>
 
 Additional HTTP headers to be sent with web socket connect request. Optional.
 
 ### option: BrowserType.connect.slowMo
-* langs: java, python, js
 - `slowMo` <[float]>
 
 Slows down Playwright operations by the specified amount of milliseconds. Useful so that you
@@ -116,17 +112,15 @@ can see what is going on. Defaults to 0.
 Logger sink for Playwright logging. Optional.
 
 ### option: BrowserType.connect.timeout
-* langs: java, python, js
 - `timeout` <[float]>
 
 Maximum time in milliseconds to wait for the connection to be established. Defaults to
-`30000` (30 seconds). Pass `0` to disable timeout.
+`0` (no timeout).
 
 ## async method: BrowserType.connectOverCDP
-* langs: java, js, python
 - returns: <[Browser]>
 
-This methods attaches Playwright to an existing browser instance using the Chrome DevTools Protocol.
+This method attaches Playwright to an existing browser instance using the Chrome DevTools Protocol.
 
 The default browser context is accessible via [`method: Browser.contexts`].
 
@@ -135,7 +129,6 @@ Connecting over the Chrome DevTools Protocol is only supported for Chromium-base
 :::
 
 ### param: BrowserType.connectOverCDP.endpointURL
-* langs: java, python, js
 - `endpointURL` <[string]>
 
 A CDP websocket endpoint or http url to connect to. For example `http://localhost:9222/` or `ws://127.0.0.1:9222/devtools/browser/387adf4c-243f-4051-a181-46798f4a46f4`.
@@ -152,13 +145,11 @@ For crusher, set this as "electron-webview"
 Deprecated, use the first argument instead. Optional.
 
 ### option: BrowserType.connectOverCDP.headers
-* langs: java, python, js
 - `headers` <[Object]<[string], [string]>>
 
 Additional HTTP headers to be sent with connect request. Optional.
 
 ### option: BrowserType.connectOverCDP.slowMo
-* langs: java, python, js
 - `slowMo` <[float]>
 
 Slows down Playwright operations by the specified amount of milliseconds. Useful so that you
@@ -171,7 +162,6 @@ can see what is going on. Defaults to 0.
 Logger sink for Playwright logging. Optional.
 
 ### option: BrowserType.connectOverCDP.timeout
-* langs: java, python, js
 - `timeout` <[float]>
 
 Maximum time in milliseconds to wait for the connection to be established. Defaults to
@@ -254,7 +244,8 @@ this context will automatically close the browser.
 Path to a User Data Directory, which stores browser session data like cookies and local storage. More details for
 [Chromium](https://chromium.googlesource.com/chromium/src/+/master/docs/user_data_dir.md#introduction) and
 [Firefox](https://developer.mozilla.org/en-US/docs/Mozilla/Command_Line_Options#User_Profile).
-Note that Chromium's user data directory is the **parent** directory of the "Profile Path" seen at `chrome://version`.
+Note that Chromium's user data directory is the **parent** directory of the "Profile Path" seen at `chrome://version`. Pass an empty string to
+use a temporary directory instead.
 
 ### option: BrowserType.launchPersistentContext.-inline- = %%-shared-browser-options-list-%%
 ### option: BrowserType.launchPersistentContext.slowMo = %%-browser-option-slowmo-%%
@@ -278,7 +269,7 @@ const { chromium } = require('playwright');  // Or 'webkit' or 'firefox'.
   const browserServer = await chromium.launchServer();
   const wsEndpoint = browserServer.wsEndpoint();
   // Use web socket endpoint later to establish a connection.
-  const browser = await chromium.connect({ wsEndpoint });
+  const browser = await chromium.connect(wsEndpoint);
   // Close browser instance.
   await browserServer.close();
 })();
@@ -293,6 +284,18 @@ const { chromium } = require('playwright');  // Or 'webkit' or 'firefox'.
 - `port` <[int]>
 
 Port to use for the web socket. Defaults to 0 that picks any available port.
+
+### option: BrowserType.launchServer.wsPath
+- `wsPath` <[string]>
+
+Path at which to serve the Browser Server. For security, this defaults to an
+unguessable string.
+
+:::warning
+Any process or web page (including those running in Playwright) with knowledge
+of the `wsPath` can take control of the OS user. For this reason, you should
+use an unguessable token when using this option.
+:::
 
 ## method: BrowserType.name
 - returns: <[string]>

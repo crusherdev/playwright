@@ -8,9 +8,13 @@ browser context is closed.
 Download event is emitted once the download starts. Download path becomes available once download completes:
 
 ```js
+// Note that Promise.all prevents a race condition
+// between clicking and waiting for the download.
 const [ download ] = await Promise.all([
-  page.waitForEvent('download'), // wait for download to start
-  page.click('a')
+  // It is important to call waitForEvent before click to set up waiting.
+  page.waitForEvent('download'),
+  // Triggers the download.
+  page.locator('text=Download file').click(),
 ]);
 // wait for download to complete
 const path = await download.path();
@@ -55,12 +59,6 @@ var download = await page.RunAndWaitForDownloadAsync(async () =>
 });
 Console.WriteLine(await download.PathAsync());
 ```
-
-:::note
-Browser context **must** be created with the [`option: acceptDownloads`] set to `true` when user needs access to the
-downloaded content. If [`option: acceptDownloads`] is not set, download events are emitted, but the actual download is
-not performed and user has no access to the downloaded files.
-:::
 
 ## async method: Download.cancel
 

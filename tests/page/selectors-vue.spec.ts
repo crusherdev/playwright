@@ -24,35 +24,39 @@ const vues = {
 
 for (const [name, url] of Object.entries(vues)) {
   it.describe(name, () => {
-    it.beforeEach(async ({page, server}) => {
+    it.beforeEach(async ({ page, server }) => {
       await page.goto(server.PREFIX + url);
     });
 
-    it('should work with single-root elements', async ({page}) => {
+    it('should work with single-root elements @smoke', async ({ page }) => {
       expect(await page.$$eval(`_vue=book-list`, els => els.length)).toBe(1);
+      expect(await page.locator(`_vue=book-list`).count()).toBe(1);
+      await expect(page.locator(`_vue=book-list`)).toHaveCount(1);
       expect(await page.$$eval(`_vue=book-item`, els => els.length)).toBe(3);
+      expect(await page.locator(`_vue=book-item`).count()).toBe(3);
+      await expect(page.locator(`_vue=book-item`)).toHaveCount(3);
       expect(await page.$$eval(`_vue=book-list >> _vue=book-item`, els => els.length)).toBe(3);
+      expect(await page.locator(`_vue=book-list >> _vue=book-item`).count()).toBe(3);
       expect(await page.$$eval(`_vue=book-item >> _vue=book-list`, els => els.length)).toBe(0);
-
     });
 
-    it('should work with multi-root elements (fragments)', async ({page}) => {
+    it('should work with multi-root elements (fragments)', async ({ page }) => {
       it.skip(name === 'vue2', 'vue2 does not support fragments');
-      expect(await page.$$eval(`_vue=Root`, els => els.length)).toBe(14);
+      expect(await page.$$eval(`_vue=Root`, els => els.length)).toBe(15);
       expect(await page.$$eval(`_vue=app-header`, els => els.length)).toBe(2);
       expect(await page.$$eval(`_vue=new-book`, els => els.length)).toBe(2);
     });
 
-    it('should not crash when there is no match', async ({page}) => {
+    it('should not crash when there is no match', async ({ page }) => {
       expect(await page.$$eval(`_vue=apps`, els => els.length)).toBe(0);
       expect(await page.$$eval(`_vue=book-li`, els => els.length)).toBe(0);
     });
 
-    it('should compose', async ({page}) => {
+    it('should compose', async ({ page }) => {
       expect(await page.$eval(`_vue=book-item >> text=Gatsby`, el => el.textContent.trim())).toBe('The Great Gatsby');
     });
 
-    it('should query by props combinations', async ({page}) => {
+    it('should query by props combinations', async ({ page }) => {
       expect(await page.$$eval(`_vue=book-item[name="The Great Gatsby"]`, els => els.length)).toBe(1);
       expect(await page.$$eval(`_vue=book-item[name="the great gatsby" i]`, els => els.length)).toBe(1);
       expect(await page.$$eval(`_vue=color-button[nested.index = 0]`, els => els.length)).toBe(1);
@@ -66,7 +70,7 @@ for (const [name, url] of Object.entries(vues)) {
       expect(await page.$$eval(`_vue=color-button[enabled = true][color = "red"i][nested.index =  6]`, els => els.length)).toBe(1);
     });
 
-    it('should exact match by props', async ({page}) => {
+    it('should exact match by props', async ({ page }) => {
       expect(await page.$eval(`_vue=book-item[name = "The Great Gatsby"]`, el => el.textContent)).toBe('The Great Gatsby');
       expect(await page.$$eval(`_vue=book-item[name = "The Great Gatsby"]`, els => els.length)).toBe(1);
       // case sensetive by default
@@ -79,7 +83,7 @@ for (const [name, url] of Object.entries(vues)) {
       expect(await page.$$eval(`_vue=book-item[name = "  The Great Gatsby  "]`, els => els.length)).toBe(0);
     });
 
-    it('should partially match by props', async ({page}) => {
+    it('should partially match by props', async ({ page }) => {
       // Check partial matching
       expect(await page.$eval(`_vue=book-item[name *= "Gatsby"]`, el => el.textContent)).toBe('The Great Gatsby');
       expect(await page.$$eval(`_vue=book-item[name *= "Gatsby"]`, els => els.length)).toBe(1);
@@ -88,7 +92,7 @@ for (const [name, url] of Object.entries(vues)) {
       expect(await page.$$eval(`_vue=book-item[name = "Gatsby"]`, els => els.length)).toBe(0);
     });
 
-    it('should support all string operators', async ({page}) => {
+    it('should support all string operators', async ({ page }) => {
       expect(await page.$$eval(`_vue=color-button[color = "red"]`, els => els.length)).toBe(3);
       expect(await page.$$eval(`_vue=color-button[color |= "red"]`, els => els.length)).toBe(3);
       expect(await page.$$eval(`_vue=color-button[color $= "ed"]`, els => els.length)).toBe(3);
@@ -98,8 +102,68 @@ for (const [name, url] of Object.entries(vues)) {
       expect(await page.$$eval(`_vue=book-item[name *= " gatsby" i]`, els => els.length)).toBe(1);
     });
 
-    it('should support truthy querying', async ({page}) => {
+    it('should support regex', async ({ page }) => {
+      expect(await page.$$eval(`_vue=color-button[color = /red/]`, els => els.length)).toBe(3);
+      expect(await page.$$eval(`_vue=color-button[color = /^red$/]`, els => els.length)).toBe(3);
+      expect(await page.$$eval(`_vue=color-button[color = /RED/i]`, els => els.length)).toBe(3);
+      expect(await page.$$eval(`_vue=color-button[color = /[pqr]ed/]`, els => els.length)).toBe(3);
+      expect(await page.$$eval(`_vue=color-button[color = /[pq]ed/]`, els => els.length)).toBe(0);
+      expect(await page.$$eval(`_vue=book-item[name = /gat.by/i]`, els => els.length)).toBe(1);
+    });
+
+    it('should support truthy querying', async ({ page }) => {
       expect(await page.$$eval(`_vue=color-button[enabled]`, els => els.length)).toBe(5);
+    });
+
+    it('should support nested vue trees', async ({ page }) => {
+      await expect(page.locator(`_vue=book-item`)).toHaveCount(3);
+      await page.evaluate(() => {
+        // @ts-ignore
+        mountNestedApp();
+      });
+      await expect(page.locator(`_vue=book-item`)).toHaveCount(6);
+    });
+
+    it('should work with multiroot react', async ({ page }) => {
+      await it.step('mount second root', async () => {
+        await expect(page.locator(`_vue=book-item`)).toHaveCount(3);
+        await page.evaluate(() => {
+          const anotherRoot = document.createElement('div');
+          anotherRoot.id = 'root2';
+          anotherRoot.append(document.createElement('div'));
+          document.body.append(anotherRoot);
+          // @ts-ignore
+          window.mountApp(anotherRoot.querySelector('div'));
+        });
+        await expect(page.locator(`_vue=book-item`)).toHaveCount(6);
+      });
+
+      await it.step('add a new book to second root', async () => {
+        await page.locator('#root2 input').fill('newbook');
+        await page.locator('#root2 >> text=new book').click();
+        await expect(page.locator('css=#root >> _vue=book-item')).toHaveCount(3);
+        await expect(page.locator('css=#root2 >> _vue=book-item')).toHaveCount(4);
+      });
+    });
+
+    it('should work with multiroot vue inside shadow DOM', async ({ page }) => {
+      await expect(page.locator(`_vue=book-item`)).toHaveCount(3);
+      await page.evaluate(vueName => {
+        const anotherRoot = document.createElement('div');
+        document.body.append(anotherRoot);
+        const shadowRoot = anotherRoot.attachShadow({ mode: 'open' });
+        if (vueName === 'vue2') {
+          // Vue2 cannot be mounted in shadow root directly.
+          const div = document.createElement('div');
+          shadowRoot.append(div);
+          // @ts-ignore
+          window.mountApp(div);
+        } else {
+          // @ts-ignore
+          window.mountApp(shadowRoot);
+        }
+      }, name);
+      await expect(page.locator(`_vue=book-item`)).toHaveCount(6);
     });
   });
 }

@@ -45,6 +45,11 @@ Note that since you don't need Playwright to install web browsers when testing E
 PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm i -D playwright
 ```
 
+**Supported Electron versions are:**
+* v12.2.0+
+* v13.4.0+
+* v14+
+
 ## async method: Electron.launch
 - returns: <[ElectronApplication]>
 
@@ -72,7 +77,7 @@ Current working directory to launch application from.
 
 Specifies environment variables that will be visible to Electron. Defaults to `process.env`.
 
-#### option: Electron.launch.timeout
+### option: Electron.launch.timeout
 - `timeout` <[float]>
 
 Maximum time in milliseconds to wait for the application to start. Defaults to `30000` (30 seconds). Pass `0` to disable timeout.

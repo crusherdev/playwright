@@ -139,7 +139,7 @@ test('should use options from the config', async ({ runInlineTest }) => {
   const result = await runInlineTest({
     'helper.ts': `
       export const test = pwt.test.extend({
-        foo: 'foo',
+        foo: [ 'foo', { option: true } ],
       });
     `,
     'playwright.config.ts': `
@@ -163,3 +163,19 @@ test('should use options from the config', async ({ runInlineTest }) => {
   expect(result.exitCode).toBe(0);
   expect(result.passed).toBe(2);
 });
+
+test('test.use() should throw if called from beforeAll ', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.ts': `
+      const test = pwt.test;
+      test.beforeAll(() => {
+        test.use({});
+      });
+      test('should work', async () => {
+      });
+    `,
+  });
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain('Playwright Test did not expect test.use() to be called here');
+});
+

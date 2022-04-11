@@ -17,7 +17,7 @@
 
 import { test as it, expect } from './pageTest';
 
-it('should work for primitives', async ({page}) => {
+it('should work for primitives', async ({ page }) => {
   const numberHandle = await page.evaluateHandle(() => 2);
   expect(numberHandle.toString()).toBe('2');
   const stringHandle = await page.evaluateHandle(() => 'a');
@@ -34,12 +34,12 @@ it('should work for complicated objects', async ({ page, browserName }) => {
 
 it('should work for promises', async ({ page }) => {
   // wrap the promise in an object, otherwise we will await.
-  const wrapperHandle = await page.evaluateHandle(() => ({b: Promise.resolve(123)}));
+  const wrapperHandle = await page.evaluateHandle(() => ({ b: Promise.resolve(123) }));
   const bHandle = await wrapperHandle.getProperty('b');
   expect(bHandle.toString()).toBe('Promise');
 });
 
-it('should work with different subtypes', async ({ page, browserName }) => {
+it('should work with different subtypes @smoke', async ({ page, browserName }) => {
   expect((await page.evaluateHandle('(function(){})')).toString()).toContain('function');
   expect((await page.evaluateHandle('12')).toString()).toBe('12');
   expect((await page.evaluateHandle('true')).toString()).toBe('true');

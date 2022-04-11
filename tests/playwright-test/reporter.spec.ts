@@ -26,7 +26,9 @@ class Reporter {
   onStdErr() {}
   onTestEnd(test, result) {}
   onTimeout() {}
-  onError() {}
+  onError(error) {
+    console.log('\\n%%got error: ' + error.message);
+  }
   onEnd() {
     console.log('\\n%%end');
   }
@@ -45,6 +47,8 @@ class Reporter {
       startTime: undefined,
       duration: undefined,
       parent: undefined,
+      data: undefined,
+      location: undefined,
       steps: step.steps.length ? step.steps.map(s => this.distillStep(s)) : undefined,
     };
   }
@@ -54,6 +58,8 @@ class Reporter {
   onStepEnd(test, result, step) {
     if (step.error?.stack)
       step.error.stack = '<stack>';
+    if (step.error?.message.includes('getaddrinfo'))
+      step.error.message = '<message>';
     console.log('%%%% end', JSON.stringify(this.distillStep(step)));
   }
 }
@@ -69,9 +75,16 @@ test('should work with custom reporter', async ({ runInlineTest }) => {
         }
         onBegin(config, suite) {
           console.log('\\n%%reporter-begin-' + this.options.begin + '%%');
+          console.log('\\n%%version-' + config.version);
         }
         onTestBegin(test) {
-          console.log('\\n%%reporter-testbegin-' + test.title + '-' + test.titlePath()[1] + '%%');
+          const projectName = test.titlePath()[1];
+          console.log('\\n%%reporter-testbegin-' + test.title + '-' + projectName + '%%');
+          const suite = test.parent;
+          if (!suite.tests.includes(test))
+            console.log('\\n%%error-inconsistent-parent');
+          if (test.parent.project().name !== projectName)
+            console.log('\\n%%error-inconsistent-project-name');
         }
         onStdOut() {
           console.log('\\n%%reporter-stdout%%');
@@ -124,6 +137,7 @@ test('should work with custom reporter', async ({ runInlineTest }) => {
   expect(result.exitCode).toBe(0);
   expect(result.output.split('\n').filter(line => line.startsWith('%%'))).toEqual([
     '%%reporter-begin-begin%%',
+    '%%version-' + require('../../packages/playwright-test/package.json').version,
     '%%reporter-testbegin-is run-foo%%',
     '%%reporter-stdout%%',
     '%%reporter-stderr%%',
@@ -158,6 +172,35 @@ test('should work without a file extension', async ({ runInlineTest }) => {
   expect(result.exitCode).toBe(0);
   expect(result.output.split('\n').filter(line => line.startsWith('%%'))).toEqual([
     '%%begin',
+    '%%end',
+  ]);
+});
+
+test('should report onEnd after global teardown', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'reporter.ts': smallReporterJS,
+    'globalSetup.ts': `
+      module.exports = () => {
+        return () => console.log('\\n%%global teardown');
+      };
+    `,
+    'playwright.config.ts': `
+      module.exports = {
+        reporter: './reporter',
+        globalSetup: './globalSetup',
+      };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+      test('pass', async ({}) => {
+      });
+    `
+  }, { reporter: '', workers: 1 });
+
+  expect(result.exitCode).toBe(0);
+  expect(result.output.split('\n').filter(line => line.startsWith('%%'))).toEqual([
+    '%%begin',
+    '%%global teardown',
     '%%end',
   ]);
 });
@@ -224,14 +267,11 @@ test('should report expect steps', async ({ runInlineTest }) => {
     `%% begin {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
     `%% end {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
     `%% begin {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
-    `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
     `%% begin {\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}]}`,
     `%% begin {\"title\":\"expect.not.toHaveTitle\",\"category\":\"expect\"}`,
-    `%% begin {\"title\":\"page.title\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"page.title\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"expect.not.toHaveTitle\",\"category\":\"expect\",\"steps\":[{\"title\":\"page.title\",\"category\":\"pw:api\"}]}`,
+    `%% end {\"title\":\"expect.not.toHaveTitle\",\"category\":\"expect\"}`,
     `%% begin {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
     `%% begin {\"title\":\"browserContext.close\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"browserContext.close\",\"category\":\"pw:api\"}`,
@@ -249,9 +289,14 @@ test('should report api steps', async ({ runInlineTest }) => {
     `,
     'a.test.ts': `
       const { test } = pwt;
-      test('pass', async ({ page }) => {
-        await page.setContent('<button></button>');
+      test('pass', async ({ page, request }) => {
+        await Promise.all([
+          page.waitForNavigation(),
+          page.goto('data:text/html,<button></button>'),
+        ]);
         await page.click('button');
+        await page.request.get('http://localhost2').catch(() => {});
+        await request.get('http://localhost2').catch(() => {});
       });
 
       test.describe('suite', () => {
@@ -278,30 +323,47 @@ test('should report api steps', async ({ runInlineTest }) => {
   expect(result.exitCode).toBe(0);
   expect(result.output.split('\n').filter(line => line.startsWith('%%')).map(stripEscapedAscii)).toEqual([
     `%% begin {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
-    `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
     `%% begin {\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}]}`,
-    `%% begin {\"title\":\"page.setContent\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"page.setContent\",\"category\":\"pw:api\"}`,
-    `%% begin {\"title\":\"page.click\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"page.click\",\"category\":\"pw:api\"}`,
+    `%% begin {\"title\":\"page.waitForNavigation\",\"category\":\"pw:api\"}`,
+    `%% begin {\"title\":\"page.goto(data:text/html,<button></button>)\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"page.waitForNavigation\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"page.goto(data:text/html,<button></button>)\",\"category\":\"pw:api\"}`,
+    `%% begin {\"title\":\"page.click(button)\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"page.click(button)\",\"category\":\"pw:api\"}`,
+    `%% begin {"title":"apiRequestContext.get(http://localhost2)","category":"pw:api"}`,
+    `%% end {"title":"apiRequestContext.get(http://localhost2)","category":"pw:api","error":{"message":"<message>","stack":"<stack>"}}`,
+    `%% begin {"title":"apiRequestContext.get(http://localhost2)","category":"pw:api"}`,
+    `%% end {"title":"apiRequestContext.get(http://localhost2)","category":"pw:api","error":{"message":"<message>","stack":"<stack>"}}`,
     `%% begin {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
+    `%% begin {\"title\":\"apiRequestContext.dispose\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"apiRequestContext.dispose\",\"category\":\"pw:api\"}`,
     `%% begin {\"title\":\"browserContext.close\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"browserContext.close\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"After Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"browserContext.close\",\"category\":\"pw:api\"}]}`,
+    `%% end {\"title\":\"After Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"apiRequestContext.dispose\",\"category\":\"pw:api\"},{\"title\":\"browserContext.close\",\"category\":\"pw:api\"}]}`,
     `%% begin {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
-    `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
-    `%% begin {\"title\":\"page.click\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"page.click\",\"category\":\"pw:api\"}`,
+    `%% begin {\"title\":\"beforeAll hook\",\"category\":\"hook\"}`,
+    `%% begin {\"title\":\"browser.newPage\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"browser.newPage\",\"category\":\"pw:api\"}`,
+    `%% begin {\"title\":\"page.setContent\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"page.setContent\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"beforeAll hook\",\"category\":\"hook\",\"steps\":[{\"title\":\"browser.newPage\",\"category\":\"pw:api\"},{\"title\":\"page.setContent\",\"category\":\"pw:api\"}]}`,
+    `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"beforeAll hook\",\"category\":\"hook\",\"steps\":[{\"title\":\"browser.newPage\",\"category\":\"pw:api\"},{\"title\":\"page.setContent\",\"category\":\"pw:api\"}]}]}`,
+    `%% begin {\"title\":\"page.click(button)\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"page.click(button)\",\"category\":\"pw:api\"}`,
     `%% begin {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
     `%% end {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
     `%% begin {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
     `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
-    `%% begin {\"title\":\"page.click\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"page.click\",\"category\":\"pw:api\"}`,
+    `%% begin {\"title\":\"page.click(button)\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"page.click(button)\",\"category\":\"pw:api\"}`,
     `%% begin {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
-    `%% end {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
+    `%% begin {\"title\":\"afterAll hook\",\"category\":\"hook\"}`,
+    `%% begin {\"title\":\"page.close\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"page.close\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"afterAll hook\",\"category\":\"hook\",\"steps\":[{\"title\":\"page.close\",\"category\":\"pw:api\"}]}`,
+    `%% end {\"title\":\"After Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"afterAll hook\",\"category\":\"hook\",\"steps\":[{\"title\":\"page.close\",\"category\":\"pw:api\"}]}]}`,
   ]);
 });
 
@@ -326,14 +388,13 @@ test('should report api step failure', async ({ runInlineTest }) => {
   expect(result.exitCode).toBe(1);
   expect(result.output.split('\n').filter(line => line.startsWith('%%')).map(stripEscapedAscii)).toEqual([
     `%% begin {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
-    `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
     `%% begin {\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}]}`,
     `%% begin {\"title\":\"page.setContent\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"page.setContent\",\"category\":\"pw:api\"}`,
-    `%% begin {\"title\":\"page.click\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"page.click\",\"category\":\"pw:api\",\"error\":{\"message\":\"page.click: Timeout 1ms exceeded.\\n=========================== logs ===========================\\nwaiting for selector \\\"input\\\"\\n============================================================\",\"stack\":\"<stack>\"}}`,
+    `%% begin {\"title\":\"page.click(input)\",\"category\":\"pw:api\"}`,
+    `%% end {\"title\":\"page.click(input)\",\"category\":\"pw:api\",\"error\":{\"message\":\"page.click: Timeout 1ms exceeded.\\n=========================== logs ===========================\\nwaiting for selector \\\"input\\\"\\n============================================================\",\"stack\":\"<stack>\"}}`,
     `%% begin {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
     `%% begin {\"title\":\"browserContext.close\",\"category\":\"pw:api\"}`,
     `%% end {\"title\":\"browserContext.close\",\"category\":\"pw:api\"}`,
@@ -341,7 +402,29 @@ test('should report api step failure', async ({ runInlineTest }) => {
   ]);
 });
 
-test('should report test.step', async ({ runInlineTest }) => {
+test('should not have internal error when steps are finished after timeout', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.ts': `
+      const test = pwt.test.extend({
+        page: async ({ page }, use) => {
+          await use(page);
+          // Timeout in fixture teardown that will resolve on browser.close.
+          await page.waitForNavigation();
+        },
+      });
+      test('pass', async ({ page }) => {
+        // Timeout in the test.
+        await page.click('foo');
+      });
+    `
+  }, { workers: 1, timeout: 1000, reporter: 'dot', retries: 1 });
+
+  expect(result.exitCode).toBe(1);
+  expect(result.failed).toBe(1);
+  expect(result.output).not.toContain('Internal error');
+});
+
+test('should show nice stacks for locators', async ({ runInlineTest }) => {
   const result = await runInlineTest({
     'reporter.ts': stepsReporterJS,
     'playwright.config.ts': `
@@ -352,140 +435,176 @@ test('should report test.step', async ({ runInlineTest }) => {
     'a.test.ts': `
       const { test } = pwt;
       test('pass', async ({ page }) => {
-        await test.step('First step', async () => {
-          expect(1).toBe(2);
-        });
+        await page.setContent('<button></button>');
+        const locator = page.locator('button');
+        await locator.evaluate(e => e.innerText);
       });
     `
   }, { reporter: '', workers: 1 });
 
-  expect(result.exitCode).toBe(1);
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(0);
+  expect(result.output).not.toContain('Internal error');
   expect(result.output.split('\n').filter(line => line.startsWith('%%')).map(stripEscapedAscii)).toEqual([
-    `%% begin {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
-    `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\"}`,
-    `%% begin {\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"Before Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"browserContext.newPage\",\"category\":\"pw:api\"}]}`,
-    `%% begin {\"title\":\"First step\",\"category\":\"test.step\"}`,
-    `%% begin {\"title\":\"expect.toBe\",\"category\":\"expect\"}`,
-    `%% end {\"title\":\"expect.toBe\",\"category\":\"expect\",\"error\":{\"message\":\"expect(received).toBe(expected) // Object.is equality\\n\\nExpected: 2\\nReceived: 1\",\"stack\":\"<stack>\"}}`,
-    `%% end {\"title\":\"First step\",\"category\":\"test.step\",\"steps\":[{\"title\":\"expect.toBe\",\"category\":\"expect\",\"error\":{\"message\":\"expect(received).toBe(expected) // Object.is equality\\n\\nExpected: 2\\nReceived: 1\",\"stack\":\"<stack>\"}}],\"error\":{\"message\":\"expect(received).toBe(expected) // Object.is equality\\n\\nExpected: 2\\nReceived: 1\",\"stack\":\"<stack>\"}}`,
-    `%% begin {\"title\":\"After Hooks\",\"category\":\"hook\"}`,
-    `%% begin {\"title\":\"browserContext.close\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"browserContext.close\",\"category\":\"pw:api\"}`,
-    `%% end {\"title\":\"After Hooks\",\"category\":\"hook\",\"steps\":[{\"title\":\"browserContext.close\",\"category\":\"pw:api\"}]}`,
+    `%% begin {"title":"Before Hooks","category":"hook"}`,
+    `%% begin {"title":"browserContext.newPage","category":"pw:api"}`,
+    `%% end {"title":"browserContext.newPage","category":"pw:api"}`,
+    `%% end {"title":"Before Hooks","category":"hook","steps":[{"title":"browserContext.newPage","category":"pw:api"}]}`,
+    `%% begin {"title":"page.setContent","category":"pw:api"}`,
+    `%% end {"title":"page.setContent","category":"pw:api"}`,
+    `%% begin {"title":"locator.evaluate(button)","category":"pw:api"}`,
+    `%% end {"title":"locator.evaluate(button)","category":"pw:api"}`,
+    `%% begin {"title":"After Hooks","category":"hook"}`,
+    `%% begin {"title":"browserContext.close","category":"pw:api"}`,
+    `%% end {"title":"browserContext.close","category":"pw:api"}`,
+    `%% end {"title":"After Hooks","category":"hook","steps":[{"title":"browserContext.close","category":"pw:api"}]}`,
   ]);
 });
 
-test('should report api step hierarchy', async ({ runInlineTest }) => {
-  const expectReporterJS = `
-    class Reporter {
-      onBegin(config: FullConfig, suite: Suite) {
-        this.suite = suite;
-      }
-
-      distillStep(step) {
-        return {
-          ...step,
-          startTime: undefined,
-          duration: undefined,
-          parent: undefined,
-          steps: step.steps.length ? step.steps.map(s => this.distillStep(s)) : undefined,
-        };
-      }
-    
-      async onEnd() {
-        const processSuite = (suite: Suite) => {
-          for (const child of suite.suites)
-            processSuite(child);
-          for (const test of suite.tests) {
-            for (const result of test.results) {
-              for (const step of result.steps) {
-                console.log('%% ' + JSON.stringify(this.distillStep(step)));
-              }
-            }
-          }
-        };
-        processSuite(this.suite);
-      }
-    }
-    module.exports = Reporter;
-  `;
-
+test('should report forbid-only error to reporter', async ({ runInlineTest }) => {
   const result = await runInlineTest({
-    'reporter.ts': expectReporterJS,
+    'reporter.ts': smallReporterJS,
     'playwright.config.ts': `
       module.exports = {
         reporter: './reporter',
       };
     `,
     'a.test.ts': `
+      pwt.test.only('pass', () => {});
+    `
+  }, { 'reporter': '', 'forbid-only': true });
+
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain(`%%got error: =====================================\n --forbid-only found a focused test.`);
+});
+
+test('should report no-tests error to reporter', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'reporter.ts': smallReporterJS,
+    'playwright.config.ts': `
+      module.exports = {
+        reporter: './reporter',
+      };
+    `
+  }, { 'reporter': '' });
+
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain(`%%got error: =================\n no tests found.`);
+});
+
+test('should report require error to reporter', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'reporter.ts': smallReporterJS,
+    'playwright.config.ts': `
+      module.exports = {
+        reporter: './reporter',
+      };
+    `,
+    'a.spec.js': `
+      throw new Error('Oh my!');
+    `,
+  }, { 'reporter': '' });
+
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain(`%%got error: Oh my!`);
+});
+
+test('should report global setup error to reporter', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'reporter.ts': smallReporterJS,
+    'playwright.config.ts': `
+      module.exports = {
+        reporter: './reporter',
+        globalSetup: './globalSetup',
+      };
+    `,
+    'globalSetup.ts': `
+      module.exports = () => {
+        throw new Error('Oh my!');
+      };
+    `,
+    'a.spec.js': `
+      pwt.test('test', () => {});
+    `,
+  }, { 'reporter': '' });
+
+  expect(result.exitCode).toBe(1);
+  expect(result.output).toContain(`%%got error: Oh my!`);
+});
+
+test('should report correct tests/suites when using grep', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.spec.js': `
       const { test } = pwt;
-      test('pass', async ({ page }) => {
-        await test.step('outer step 1', async () => {
-          await test.step('inner step 1.1', async () => {});
-          await test.step('inner step 1.2', async () => {});
+
+      test.describe('@foo', () => {
+        test('test1', async ({ }) => {
+          console.log('%%test1');
         });
-        await test.step('outer step 2', async () => {
-          await test.step('inner step 2.1', async () => {});
-          await test.step('inner step 2.2', async () => {});
+        test('test2', async ({ }) => {
+          console.log('%%test2');
         });
       });
-    `
-  }, { reporter: '', workers: 1 });
+
+      test('test3', async ({ }) => {
+        console.log('%%test3');
+      });
+    `,
+  }, { 'grep': '@foo' });
 
   expect(result.exitCode).toBe(0);
-  const objects = result.output.split('\n').filter(line => line.startsWith('%% ')).map(line => line.substring(3).trim()).filter(Boolean).map(line => JSON.parse(line));
-  expect(objects).toEqual([
-    {
-      category: 'hook',
-      title: 'Before Hooks',
-      steps: [
-        {
-          category: 'pw:api',
-          title: 'browserContext.newPage',
-        },
-      ],
-    },
-    {
-      category: 'test.step',
-      title: 'outer step 1',
-      steps: [
-        {
-          category: 'test.step',
-          title: 'inner step 1.1',
-        },
-        {
-          category: 'test.step',
-          title: 'inner step 1.2',
-        },
-      ],
-    },
-    {
-      category: 'test.step',
-      title: 'outer step 2',
-      steps: [
-        {
-          category: 'test.step',
-          title: 'inner step 2.1',
-        },
-        {
-          category: 'test.step',
-          title: 'inner step 2.2',
-        },
-      ],
-    },
-    {
-      category: 'hook',
-      title: 'After Hooks',
-      steps: [
-        {
-          category: 'pw:api',
-          title: 'browserContext.close',
-        },
-      ],
-    },
-  ]);
+  expect(result.output).toContain('%%test1');
+  expect(result.output).toContain('%%test2');
+  expect(result.output).not.toContain('%%test3');
+  const fileSuite = result.report.suites[0];
+  expect(fileSuite.suites.length).toBe(1);
+  expect(fileSuite.suites[0].specs.length).toBe(2);
+  expect(fileSuite.specs.length).toBe(0);
+});
+
+test('should use sourceMap-based file suite names', async ({ runInlineTest }) => {
+  test.info().annotations.push({ type: 'issue', description: 'https://github.com/microsoft/playwright/issues/11028' });
+  const result = await runInlineTest({
+    'reporter.js': `
+      class Reporter {
+        onBegin(config, suite) {
+          console.log(suite.suites[0].suites[0].location.file);
+        }
+      }
+      module.exports = Reporter;
+    `,
+    'playwright.config.ts': `
+      module.exports = {
+        reporter: './reporter',
+      };
+    `,
+    'a.spec.js':
+`var __create = Object.create;//@no-header
+var __defProp = Object.defineProperty;
+var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __getProtoOf = Object.getPrototypeOf;
+var __hasOwnProp = Object.prototype.hasOwnProperty;
+var __markAsModule = (target) => __defProp(target, "__esModule", { value: true });
+var __reExport = (target, module2, desc) => {
+  if (module2 && typeof module2 === "object" || typeof module2 === "function") {
+    for (let key of __getOwnPropNames(module2))
+      if (!__hasOwnProp.call(target, key) && key !== "default")
+        __defProp(target, key, { get: () => module2[key], enumerable: !(desc = __getOwnPropDesc(module2, key)) || desc.enumerable });
+  }
+  return target;
+};
+var __toModule = (module2) => {
+  return __reExport(__markAsModule(__defProp(module2 != null ? __create(__getProtoOf(module2)) : {}, "default", module2 && module2.__esModule && "default" in module2 ? { get: () => module2.default, enumerable: true } : { value: module2, enumerable: true })), module2);
+};
+var import_test = __toModule(require("@playwright/test"));
+(0, import_test.test)("pass", async () => {
+});
+//# sourceMappingURL=data:application/json;base64,ewogICJ2ZXJzaW9uIjogMywKICAic291cmNlcyI6IFsiLi4vc3JjL2Euc3BlYy50cyJdLAogICJzb3VyY2VzQ29udGVudCI6IFsiaW1wb3J0IHsgdGVzdCB9IGZyb20gXCJAcGxheXdyaWdodC90ZXN0XCI7XG5cbnRlc3QoJ3Bhc3MnLCBhc3luYyAoKSA9PiB7fSk7Il0sCiAgIm1hcHBpbmdzIjogIjs7Ozs7Ozs7Ozs7Ozs7Ozs7O0FBQUEsa0JBQXFCO0FBRXJCLHNCQUFLLFFBQVEsWUFBWTtBQUFBOyIsCiAgIm5hbWVzIjogW10KfQo=`,
+  }, { 'reporter': '' });
+
+  expect(result.exitCode).toBe(0);
+  expect(result.output).toContain('a.spec.ts');
 });
 
 function stripEscapedAscii(str: string) {

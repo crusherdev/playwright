@@ -218,7 +218,7 @@ test('should throw when test() is called in config file', async ({ runInlineTest
       });
     `,
   });
-  expect(result.output).toContain('test() can only be called in a test file');
+  expect(result.output).toContain('Playwright Test did not expect test() to be called here');
 });
 
 test('should filter by project, case-insensitive', async ({ runInlineTest }) => {
@@ -259,7 +259,77 @@ test('should print nice error when project is unknown', async ({ runInlineTest }
     `
   }, { project: 'suite3' });
   expect(exitCode).toBe(1);
-  expect(output).toContain('Project "suite3" not found. Available named projects: "suite1", "suite2"');
+  expect(output).toContain('Project(s) "suite3" not found. Available named projects: "suite1", "suite2"');
+});
+
+test('should filter by project list, case-insensitive', async ({ runInlineTest }) => {
+  const { passed, failed, output, skipped } = await runInlineTest({
+    'playwright.config.ts': `
+      module.exports = { projects: [
+        { name: 'suite1' },
+        { name: 'suite2' },
+        { name: 'suite3' },
+        { name: 'suite4' },
+      ] };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+      test('pass', async ({}, testInfo) => {
+        console.log(testInfo.project.name);
+      });
+    `
+  }, { project: ['SUite2',  'Suite3'] });
+  expect(passed).toBe(2);
+  expect(failed).toBe(0);
+  expect(skipped).toBe(0);
+  expect(output).toContain('suite2');
+  expect(output).toContain('suite3');
+  expect(output).not.toContain('suite1');
+  expect(output).not.toContain('suite4');
+});
+
+test('should filter when duplicate project names exist', async ({ runInlineTest }) => {
+  const { passed, failed, output, skipped } = await runInlineTest({
+    'playwright.config.ts': `
+      module.exports = { projects: [
+        { name: 'suite1' },
+        { name: 'suite2' },
+        { name: 'suite1' },
+        { name: 'suite4' },
+      ] };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+      test('pass', async ({}, testInfo) => {
+        console.log(testInfo.project.name);
+      });
+    `
+  }, { project: ['suite1',  'sUIte4'] });
+  expect(passed).toBe(3);
+  expect(failed).toBe(0);
+  expect(skipped).toBe(0);
+  expect(output).toContain('suite1');
+  expect(output).toContain('suite4');
+  expect(output).not.toContain('suite2');
+});
+
+test('should print nice error when some of the projects are unknown', async ({ runInlineTest }) => {
+  const { output, exitCode } = await runInlineTest({
+    'playwright.config.ts': `
+      module.exports = { projects: [
+        { name: 'suite1' },
+        { name: 'suite2' },
+      ] };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+      test('pass', async ({}, testInfo) => {
+        console.log(testInfo.project.name);
+      });
+    `
+  }, { project: ['suitE1', 'suIte3', 'SUite4'] });
+  expect(exitCode).toBe(1);
+  expect(output).toContain('Project(s) "suIte3", "SUite4" not found. Available named projects: "suite1", "suite2"');
 });
 
 test('should work without config file', async ({ runInlineTest }) => {
@@ -291,7 +361,7 @@ test('should inerhit use options in projects', async ({ runInlineTest }) => {
       };
     `,
     'a.test.ts': `
-      const { test } = pwt;
+      const test = pwt.test.extend({ foo: ['', {option:true}], bar: ['', {option: true}] });
       test('pass', async ({ foo, bar  }, testInfo) => {
         test.expect(foo).toBe('config');
         test.expect(bar).toBe('project');
@@ -316,7 +386,7 @@ test('should work with undefined values and base', async ({ runInlineTest }) => 
         expect(testInfo.config.updateSnapshots).toBe('missing');
       });
     `
-  }, {}, { CI: '1' });
+  });
 
   expect(result.exitCode).toBe(0);
   expect(result.passed).toBe(1);

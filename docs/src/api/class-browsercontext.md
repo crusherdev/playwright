@@ -6,7 +6,7 @@ BrowserContexts provide a way to operate multiple independent browser sessions.
 If a page opens another page, e.g. with a `window.open` call, the popup will belong to the parent page's browser
 context.
 
-Playwright allows creation of "incognito" browser contexts with `browser.newContext()` method. "Incognito" browser
+Playwright allows creating "incognito" browser contexts with [`method: Browser.newContext`] method. "Incognito" browser
 contexts don't write any browsing data to disk.
 
 ```js
@@ -218,13 +218,13 @@ await context.AddCookiesAsync(new[] { cookie1, cookie2 });
 - `cookies` <[Array]<[Object]>>
   - `name` <[string]>
   - `value` <[string]>
-  - `url` <[string]> either url or domain / path are required. Optional.
-  - `domain` <[string]> either url or domain / path are required Optional.
-  - `path` <[string]> either url or domain / path are required Optional.
-  - `expires` <[float]> Unix time in seconds. Optional.
-  - `httpOnly` <[boolean]> Optional.
-  - `secure` <[boolean]> Optional.
-  - `sameSite` <[SameSiteAttribute]<"Strict"|"Lax"|"None">> Optional.
+  - `url` ?<[string]> either url or domain / path are required. Optional.
+  - `domain` ?<[string]> either url or domain / path are required Optional.
+  - `path` ?<[string]> either url or domain / path are required Optional.
+  - `expires` ?<[float]> Unix time in seconds. Optional.
+  - `httpOnly` ?<[boolean]> Optional.
+  - `secure` ?<[boolean]> Optional.
+  - `sameSite` ?<[SameSiteAttribute]<"Strict"|"Lax"|"None">> Optional.
 
 ## async method: BrowserContext.addInitScript
 
@@ -277,9 +277,9 @@ The order of evaluation of multiple scripts installed via [`method: BrowserConte
 ### param: BrowserContext.addInitScript.script
 * langs: js
 - `script` <[function]|[string]|[Object]>
-  - `path` <[path]> Path to the JavaScript file. If `path` is a relative path, then it is resolved relative to the
+  - `path` ?<[path]> Path to the JavaScript file. If `path` is a relative path, then it is resolved relative to the
     current working directory. Optional.
-  - `content` <[string]> Raw script content. Optional.
+  - `content` ?<[string]> Raw script content. Optional.
 
 Script to be evaluated in all pages in the browser context.
 
@@ -291,7 +291,7 @@ Script to be evaluated in all pages in the browser context.
 
 ### param: BrowserContext.addInitScript.arg
 * langs: js
-- `arg` <[Serializable]>
+- `arg` ?<[Serializable]>
 
 Optional argument to pass to [`param: script`] (only supported when passing a function).
 
@@ -349,7 +349,7 @@ context.clear_permissions()
 ```csharp
 var context = await browser.NewContextAsync();
 await context.GrantPermissionsAsync(new[] { "clipboard-read" });
-// Alternatively, you can use the helper class ContextPermissions 
+// Alternatively, you can use the helper class ContextPermissions
 //  to specify the permissions...
 // do stuff ...
 await context.ClearPermissionsAsync();
@@ -378,7 +378,7 @@ If no URLs are specified, this method returns all cookies. If URLs are specified
 are returned.
 
 ### param: BrowserContext.cookies.urls
-- `urls` <[string]|[Array]<[string]>>
+- `urls` ?<[string]|[Array]<[string]>>
 
 Optional list of URLs.
 
@@ -589,9 +589,9 @@ await page.SetContentAsync("<script>\n" +
   "<div>Or click me</div>\n");
 
 await page.ClickAsync("div");
-// Note: it makes sense to await the result here, because otherwise, the context 
+// Note: it makes sense to await the result here, because otherwise, the context
 //  gets closed and the binding function will throw an exception.
-Assert.Equal("Click me", await result.Task);
+Assert.AreEqual("Click me", await result.Task);
 ```
 
 ### param: BrowserContext.exposeBinding.name
@@ -805,7 +805,6 @@ A permission or an array of permissions to grant. Permissions can be one of the 
 * `'midi'`
 * `'midi-sysex'` (system-exclusive midi)
 * `'notifications'`
-* `'push'`
 * `'camera'`
 * `'microphone'`
 * `'background-sync'`
@@ -834,9 +833,10 @@ CDP sessions are only supported on Chromium-based browsers.
 Returns the newly created session.
 
 ### param: BrowserContext.newCDPSession.page
-- `page` <[Page]>
+- `page` <[Page]|[Frame]>
 
-Page to create new session for.
+Target to create new session for. For backwards-compatibility, this parameter is
+named `page`, but it can be a `Page` or `Frame` type.
 
 ## async method: BrowserContext.newPage
 - returns: <[Page]>
@@ -848,10 +848,20 @@ Creates a new page in the browser context.
 
 Returns all open pages in the context.
 
+## property: BrowserContext.request
+* langs: js, java, python
+- type: <[APIRequestContext]>
+
+API testing helper associated with this context. Requests made with this API will use context cookies.
+
 ## async method: BrowserContext.route
 
 Routing provides the capability to modify network requests that are made by any page in the browser context. Once route
 is enabled, every request matching the url pattern will stall unless it's continued, fulfilled or aborted.
+
+:::note
+[`method: Page.route`] will not intercept requests intercepted by Service Worker. See [this](https://github.com/microsoft/playwright/issues/1090) issue. We recommend disabling Service Workers when using request interception. Via `await context.addInitScript(() => delete window.navigator.serviceWorker);`
+:::
 
 An example of a naive handler that aborts all image requests:
 
@@ -1016,6 +1026,11 @@ handler function to route the request.
 
 handler function to route the request.
 
+### option: BrowserContext.route.times
+- `times` <[int]>
+
+How often a route should be used. By default it will be used every time.
+
 ## method: BrowserContext.serviceWorkers
 * langs: js, python
 - returns: <[Array]<[Worker]>>
@@ -1112,7 +1127,7 @@ its geolocation.
 - `geolocation` <[null]|[Object]>
   - `latitude` <[float]> Latitude between -90 and 90.
   - `longitude` <[float]> Longitude between -180 and 180.
-  - `accuracy` <[float]> Non-negative accuracy value. Defaults to `0`.
+  - `accuracy` ?<[float]> Non-negative accuracy value. Defaults to `0`.
 
 ## async method: BrowserContext.setHTTPCredentials
 * langs: js
@@ -1154,12 +1169,7 @@ Returns storage state for this browser context, contains current cookies and loc
 * langs: csharp, java
 - returns: <[string]>
 
-### option: BrowserContext.storageState.path
-- `path` <[path]>
-
-The file path to save the storage state to. If [`option: path`] is a relative path, then it is resolved relative to
-current working directory. If no path is provided, storage
-state is still returned, but won't be saved to the disk.
+### option: BrowserContext.storageState.path = %%-storagestate-option-path-%%
 
 ## property: BrowserContext.tracing
 - type: <[Tracing]>
@@ -1177,13 +1187,13 @@ A glob pattern, regex pattern or predicate receiving [URL] used to register a ro
 
 ### param: BrowserContext.unroute.handler
 * langs: js, python
-- `handler` <[function]\([Route], [Request]\)>
+- `handler` ?<[function]\([Route], [Request]\)>
 
 Optional handler function used to register a routing with [`method: BrowserContext.route`].
 
 ### param: BrowserContext.unroute.handler
 * langs: csharp, java
-- `handler` <[function]\([Route]\)>
+- `handler` ?<[function]\([Route]\)>
 
 Optional handler function used to register a routing with [`method: BrowserContext.route`].
 
@@ -1232,9 +1242,9 @@ Event name, same one would pass into `browserContext.on(event)`.
 
 ### param: BrowserContext.waitForEvent.optionsOrPredicate
 * langs: js
-- `optionsOrPredicate` <[function]|[Object]>
+- `optionsOrPredicate` ?<[function]|[Object]>
   - `predicate` <[function]> receives the event data and resolves to truthy value when the waiting should resolve.
-  - `timeout` <[float]> maximum time to wait for in milliseconds. Defaults to `30000` (30 seconds). Pass `0` to
+  - `timeout` ?<[float]> maximum time to wait for in milliseconds. Defaults to `30000` (30 seconds). Pass `0` to
     disable timeout. The default value can be changed by using the [`method: BrowserContext.setDefaultTimeout`].
 
 Either a predicate that receives an event or an options object. Optional.

@@ -97,6 +97,10 @@ pageTypes.Clip = {
   height: t.Number,
 };
 
+pageTypes.InitScript = {
+  script: t.String,
+  worldName: t.Optional(t.String),
+};
 
 const runtimeTypes = {};
 runtimeTypes.RemoteObject = {
@@ -203,12 +207,6 @@ networkTypes.ResourceTiming = {
   connectEnd: t.Number,
   requestStart: t.Number,
   responseStart: t.Number,
-};
-
-networkTypes.InterceptedResponse = {
-  status: t.Number,
-  statusText: t.String,
-  headers: t.Array(networkTypes.HTTPHeader),
 };
 
 const Browser = {
@@ -327,6 +325,12 @@ const Browser = {
         userAgent: t.Nullable(t.String),
       }
     },
+    'setPlatformOverride': {
+      params: {
+        browserContextId: t.Optional(t.String),
+        platform: t.Nullable(t.String),
+      }
+    },
     'setBypassCSP': {
       params: {
         browserContextId: t.Optional(t.String),
@@ -381,10 +385,10 @@ const Browser = {
         hidden: t.Boolean,
       }
     },
-    'addScriptToEvaluateOnNewDocument': {
+    'setInitScripts': {
       params: {
         browserContextId: t.Optional(t.String),
-        script: t.String,
+        scripts: t.Array(pageTypes.InitScript),
       }
     },
     'addBinding': {
@@ -453,9 +457,11 @@ const Browser = {
     'setVideoRecordingOptions': {
       params: {
         browserContextId: t.Optional(t.String),
-        dir: t.String,
-        width: t.Number,
-        height: t.Number,
+        options: t.Optional({
+          dir: t.String,
+          width: t.Number,
+          height: t.Number,
+        }),
       },
     },
     'cancelDownload': {
@@ -500,6 +506,8 @@ const Network = {
       requestId: t.String,
       responseEndTime: t.Number,
       transferSize: t.Number,
+      encodedBodySize: t.Number,
+      protocolVersion: t.Optional(t.String),
     },
     'requestFailed': {
       requestId: t.String,
@@ -530,10 +538,6 @@ const Network = {
         method: t.Optional(t.String),
         headers: t.Optional(t.Array(networkTypes.HTTPHeader)),
         postData: t.Optional(t.String),
-        interceptResponse: t.Optional(t.Boolean),
-      },
-      returns: {
-        response: t.Optional(networkTypes.InterceptedResponse),
       },
     },
     'fulfillInterceptedRequest': {
@@ -802,10 +806,9 @@ const Page = {
         rect: t.Optional(pageTypes.Rect),
       },
     },
-    'addScriptToEvaluateOnNewDocument': {
+    'setInitScripts': {
       params: {
-        script: t.String,
-        worldName: t.Optional(t.String),
+        scripts: t.Array(pageTypes.InitScript)
       }
     },
     'navigate': {
@@ -906,6 +909,16 @@ const Page = {
         modifiers: t.Number,
         clickCount: t.Optional(t.Number),
         buttons: t.Number,
+      }
+    },
+    'dispatchWheelEvent': {
+      params: {
+        x: t.Number,
+        y: t.Number,
+        deltaX: t.Number,
+        deltaY: t.Number,
+        deltaZ: t.Number,
+        modifiers: t.Number,
       }
     },
     'insertText': {

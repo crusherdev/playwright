@@ -213,12 +213,16 @@ class BrowserHandler {
     await this._targetRegistry.browserContextForId(browserContextId).setForcedColors(nullToUndefined(forcedColors));
   }
 
-  async ['Browser.setVideoRecordingOptions']({browserContextId, dir, width, height, scale}) {
-    await this._targetRegistry.browserContextForId(browserContextId).setVideoRecordingOptions({dir, width, height, scale});
+  async ['Browser.setVideoRecordingOptions']({browserContextId, options}) {
+    await this._targetRegistry.browserContextForId(browserContextId).setVideoRecordingOptions(options);
   }
 
   async ['Browser.setUserAgentOverride']({browserContextId, userAgent}) {
     await this._targetRegistry.browserContextForId(browserContextId).setDefaultUserAgent(userAgent);
+  }
+
+  async ['Browser.setPlatformOverride']({browserContextId, platform}) {
+    await this._targetRegistry.browserContextForId(browserContextId).setDefaultPlatform(platform);
   }
 
   async ['Browser.setBypassCSP']({browserContextId, bypassCSP}) {
@@ -249,8 +253,8 @@ class BrowserHandler {
     await this._targetRegistry.browserContextForId(browserContextId).applySetting('scrollbarsHidden', nullToUndefined(hidden));
   }
 
-  async ['Browser.addScriptToEvaluateOnNewDocument']({browserContextId, script}) {
-    await this._targetRegistry.browserContextForId(browserContextId).addScriptToEvaluateOnNewDocument(script);
+  async ['Browser.setInitScripts']({browserContextId, scripts}) {
+    await this._targetRegistry.browserContextForId(browserContextId).setInitScripts(scripts);
   }
 
   async ['Browser.addBinding']({browserContextId, worldName, name, script}) {
@@ -305,7 +309,12 @@ async function waitForWindowClosed(browserWindow) {
   await new Promise((resolve => {
     const listener = {
       onCloseWindow: window => {
-        if (window === browserWindow) {
+        let domWindow;
+        if (window instanceof Ci.nsIAppWindow)
+          domWindow = window.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
+        else
+          domWindow = window;
+        if (domWindow === browserWindow) {
           Services.wm.removeListener(listener);
           resolve();
         }

@@ -1,12 +1,12 @@
 module.exports = {
-    parser: '@typescript-eslint/parser',
-    plugins: ['@typescript-eslint', 'notice'],
+    parser: "@typescript-eslint/parser",
+    plugins: ["@typescript-eslint", "notice"],
     parserOptions: {
       ecmaVersion: 9,
-      sourceType: 'module',
+      sourceType: "module",
     },
     extends: [
-      'plugin:react-hooks/recommended'
+      "plugin:react-hooks/recommended"
     ],
 
     /**
@@ -18,12 +18,14 @@ module.exports = {
      *   "rule-name", [severity, { opts }]
      * Severity: 2 == error, 1 == warning, 0 == off.
      */
-    "rules": {
-        '@typescript-eslint/no-unused-vars': [2, {args: 'none'}],
+    rules: {
+        "@typescript-eslint/no-unused-vars": [2, {args: "none"}],
+        "@typescript-eslint/consistent-type-imports": [2, {disallowTypeAnnotations: false}],
         /**
          * Enforced rules
          */
         // syntax preferences
+        "object-curly-spacing": ["error", "always"],
         "quotes": [2, "single", {
             "avoidEscape": true,
             "allowTemplateLiterals": true

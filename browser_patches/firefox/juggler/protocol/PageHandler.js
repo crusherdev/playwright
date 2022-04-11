@@ -259,8 +259,8 @@ class PageHandler {
       this._pageNetwork.disableRequestInterception();
   }
 
-  async ['Network.resumeInterceptedRequest']({requestId, url, method, headers, postData, interceptResponse}) {
-    return await this._pageNetwork.resumeInterceptedRequest(requestId, url, method, headers, postData, interceptResponse);
+  async ['Network.resumeInterceptedRequest']({requestId, url, method, headers, postData}) {
+    this._pageNetwork.resumeInterceptedRequest(requestId, url, method, headers, postData);
   }
 
   async ['Network.abortInterceptedRequest']({requestId, errorCode}) {
@@ -334,8 +334,8 @@ class PageHandler {
     return await this._contentPage.send('scrollIntoViewIfNeeded', options);
   }
 
-  async ['Page.addScriptToEvaluateOnNewDocument'](options) {
-    return await this._contentPage.send('addScriptToEvaluateOnNewDocument', options);
+  async ['Page.setInitScripts']({ scripts }) {
+    return await this._pageTarget.setInitScripts(scripts);
   }
 
   async ['Page.dispatchKeyEvent'](options) {
@@ -352,6 +352,10 @@ class PageHandler {
 
   async ['Page.dispatchMouseEvent'](options) {
     return await this._contentPage.send('dispatchMouseEvent', options);
+  }
+
+  async ['Page.dispatchWheelEvent'](options) {
+    return await this._contentPage.send('dispatchWheelEvent', options);
   }
 
   async ['Page.insertText'](options) {

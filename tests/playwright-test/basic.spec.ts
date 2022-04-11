@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-import { test, expect, stripAscii } from './playwright-test-fixtures';
-import * as path from 'path';
+import { test, expect, stripAnsi } from './playwright-test-fixtures';
 
 test('should fail', async ({ runInlineTest }) => {
   const result = await runInlineTest({
@@ -241,7 +240,7 @@ test('should focus test from one project', async ({ runInlineTest }) => {
 test('should work with default export', async ({ runInlineTest }) => {
   const result = await runInlineTest({
     'file.spec.ts': `
-      import t from ${JSON.stringify(path.join(__dirname, 'entry'))};
+      import t from '@playwright/test';
       t('passed', () => {
         t.expect(1 + 1).toBe(2);
       });
@@ -287,7 +286,7 @@ test('should work with test wrapper', async ({ runInlineTest }) => {
   }, { workers: 1, reporter: 'line' });
   expect(result.passed).toBe(4);
   expect(result.exitCode).toBe(0);
-  expect(stripAscii(result.output).split('\n').filter(line => line.startsWith('%%'))).toEqual([
+  expect(stripAnsi(result.output).split('\n').filter(line => line.startsWith('%%'))).toEqual([
     '%%a.spec',
     '%%helper',
     '%%b.spec',
@@ -336,7 +335,7 @@ test('should work with test helper', async ({ runInlineTest }) => {
   }, { workers: 1, reporter: 'line' });
   expect(result.passed).toBe(4);
   expect(result.exitCode).toBe(0);
-  expect(stripAscii(result.output).split('\n').filter(line => line.startsWith('%%'))).toEqual([
+  expect(stripAnsi(result.output).split('\n').filter(line => line.startsWith('%%'))).toEqual([
     '%%a.spec',
     '%%helper-a',
     '%%b.spec',
@@ -367,7 +366,7 @@ test('should help with describe() misuse', async ({ runInlineTest }) => {
   ].join('\n'));
 });
 
-test('test.skip should define a skipped test', async ({ runInlineTest }) => {
+test('test.{skip,fixme} should define a skipped test', async ({ runInlineTest }) => {
   const result = await runInlineTest({
     'a.test.ts': `
       const { test } = pwt;
@@ -376,9 +375,96 @@ test('test.skip should define a skipped test', async ({ runInlineTest }) => {
         console.log('%%dontseethis');
         throw new Error('foo');
       });
+      test.fixme('bar', () => {
+        console.log('%%dontseethis');
+        throw new Error('bar');
+      });
     `,
   });
   expect(result.exitCode).toBe(0);
-  expect(result.skipped).toBe(1);
+  expect(result.skipped).toBe(2);
   expect(result.output).not.toContain('%%dontseethis');
+});
+
+test('should report unhandled rejection during worker shutdown', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.ts': `
+      const { test } = pwt;
+      test('unhandled rejection', async () => {
+        new Promise((f, r) => r(new Error('Unhandled')));
+      });
+    `,
+  });
+  expect(result.exitCode).toBe(1);
+  expect(result.passed).toBe(1);
+  expect(result.output).toContain('Error: Unhandled');
+  expect(result.output).toContain('a.test.ts:7:33');
+});
+
+test('should not reuse worker after unhandled rejection in test.fail', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.spec.ts': `
+      const test = pwt.test.extend({
+        needsCleanup: async ({}, use) => {
+          await use();
+          await new Promise(f => setTimeout(f, 3000));
+        }
+      });
+
+      test('failing', async ({ needsCleanup }) => {
+        test.fail();
+        new Promise(() => { throw new Error('Oh my!') });
+      });
+
+      test('passing', async () => {
+      });
+    `
+  }, { workers: 1 });
+  expect(result.exitCode).toBe(1);
+  expect(result.failed).toBe(1);
+  expect(result.skipped).toBe(1);
+  expect(result.output).toContain(`Error: Oh my!`);
+  expect(result.output).not.toContain(`Did not teardown test scope`);
+});
+
+test('should allow unhandled expects in test.fail', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.spec.ts': `
+      const { test } = pwt;
+      test('failing1', async ({}) => {
+        test.fail();
+        Promise.resolve().then(() => expect(1).toBe(2));
+        await new Promise(f => setTimeout(f, 100));
+      });
+    `
+  });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+  expect(result.output).not.toContain(`Error: expect`);
+});
+
+test('should support describe.skip', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'nested-skip.spec.js': `
+      const { test } = pwt;
+      test.describe.skip('skipped', () => {
+        test.describe('nested', () => {
+          test('test1', () => {});
+        });
+        test('test2', () => {});
+      });
+      test.describe('not skipped', () => {
+        test.describe.skip('skipped', () => {
+          test('test4', () => {});
+        });
+        test('test4', () => {
+          console.log('heytest4');
+        });
+      });
+    `
+  });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+  expect(result.skipped).toBe(3);
+  expect(result.output).toContain('heytest4');
 });

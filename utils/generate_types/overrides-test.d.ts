@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import type { Browser, BrowserContext, BrowserContextOptions, Page, LaunchOptions, ViewportSize, Geolocation, HTTPCredentials } from './types';
+import type { APIRequestContext, Browser, BrowserContext, BrowserContextOptions, Page, LaunchOptions, ViewportSize, Geolocation, HTTPCredentials } from 'playwright-core';
 import type { Expect } from './testExpect';
 
 export type { Expect } from './testExpect';
@@ -23,8 +23,10 @@ export type ReporterDescription =
   ['dot'] |
   ['line'] |
   ['list'] |
+  ['github'] |
   ['junit'] | ['junit', { outputFile?: string, stripANSIControlSequences?: boolean }] |
   ['json'] | ['json', { outputFile?: string }] |
+  ['html'] | ['html', { outputFolder?: string, open?: 'always' | 'never' | 'on-failure' }] |
   ['null'] |
   [string] | [string, any];
 
@@ -33,21 +35,36 @@ export type ReportSlowTests = { max: number, threshold: number } | null;
 export type PreserveOutput = 'always' | 'never' | 'failures-only';
 export type UpdateSnapshots = 'all' | 'none' | 'missing';
 
-type FixtureDefine<TestArgs extends KeyValue = {}, WorkerArgs extends KeyValue = {}> = { test: TestType<TestArgs, WorkerArgs>, fixtures: Fixtures<{}, {}, TestArgs, WorkerArgs> };
+type UseOptions<TestArgs, WorkerArgs> = { [K in keyof WorkerArgs]?: WorkerArgs[K] } & { [K in keyof TestArgs]?: TestArgs[K] };
 
 type ExpectSettings = {
-  // Default timeout for async expect matchers in milliseconds, defaults to 5000ms.
+  /**
+   * Default timeout for async expect matchers in milliseconds, defaults to 5000ms.
+   */
   timeout?: number;
   toMatchSnapshot?: {
-    // Pixel match threshold.
-    threshold?: number
+    /** An acceptable perceived color difference in the [YIQ color space](https://en.wikipedia.org/wiki/YIQ) between pixels in compared images, between zero (strict) and one (lax). Defaults to `0.2`.
+     */
+    threshold?: number,
+    /**
+     * An acceptable amount of pixels that could be different, unset by default.
+     */
+    maxDiffPixels?: number,
+    /**
+     * An acceptable ratio of pixels that are different to the total amount of pixels, between `0` and `1` , unset by default.
+     */
+    maxDiffPixelRatio?: number,
   }
 };
 
 interface TestProject {
   expect?: ExpectSettings;
+  fullyParallel?: boolean;
+  grep?: RegExp | RegExp[];
+  grepInvert?: RegExp | RegExp[] | null;
   metadata?: any;
   name?: string;
+  snapshotDir?: string;
   outputDir?: string;
   repeatEach?: number;
   retries?: number;
@@ -58,11 +75,10 @@ interface TestProject {
 }
 
 export interface Project<TestArgs = {}, WorkerArgs = {}> extends TestProject {
-  define?: FixtureDefine | FixtureDefine[];
-  use?: Fixtures<{}, {}, TestArgs, WorkerArgs>;
+  use?: UseOptions<TestArgs, WorkerArgs>;
 }
 
-export type FullProject<TestArgs = {}, WorkerArgs = {}> = Required<Project<TestArgs, WorkerArgs>>;
+export type FullProject<TestArgs = {}, WorkerArgs = {}> = Required<Project<PlaywrightTestOptions & TestArgs, PlaywrightWorkerOptions & WorkerArgs>>;
 
 export type WebServerConfig = {
   /**
@@ -71,16 +87,26 @@ export type WebServerConfig = {
   command: string,
   /**
    * The port that your http server is expected to appear on. It does wait until it accepts connections.
+   * Exactly one of `port` or `url` is required.
    */
-  port: number,
+  port?: number,
+  /**
+   * The url on your http server that is expected to return a 2xx status code when the server is ready to accept connections.
+   * Exactly one of `port` or `url` is required.
+   */
+  url?: string,
+  /**
+   * Whether to ignore HTTPS errors when fetching the `url`. Defaults to `false`.
+   */
+   ignoreHTTPSErrors?: boolean,
   /**
    * How long to wait for the process to start up and be available in milliseconds. Defaults to 60000.
    */
   timeout?: number,
   /**
-   * If true, it will re-use an existing server on the port when available. If no server is running
-   * on that port, it will run the command to start a new server.
-   * If false, it will throw if an existing process is listening on the port.
+   * If true, it will re-use an existing server on the port or url when available. If no server is running
+   * on that port or url, it will run the command to start a new server.
+   * If false, it will throw if an existing process is listening on the port or url.
    * This should commonly set to !process.env.CI to allow the local dev server when running tests locally.
    */
   reuseExistingServer?: boolean
@@ -98,6 +124,7 @@ type LiteralUnion<T extends U, U = string> = T | (U & { zz_IGNORE_ME?: never });
 
 interface TestConfig {
   forbidOnly?: boolean;
+  fullyParallel?: boolean;
   globalSetup?: string;
   globalTeardown?: string;
   globalTimeout?: number;
@@ -107,7 +134,7 @@ interface TestConfig {
   preserveOutput?: PreserveOutput;
   projects?: Project[];
   quiet?: boolean;
-  reporter?: LiteralUnion<'list'|'dot'|'line'|'json'|'junit'|'null', string> | ReporterDescription[];
+  reporter?: LiteralUnion<'list'|'dot'|'line'|'github'|'json'|'junit'|'null'|'html', string> | ReporterDescription[];
   reportSlowTests?: ReportSlowTests;
   shard?: Shard;
   updateSnapshots?: UpdateSnapshots;
@@ -117,6 +144,7 @@ interface TestConfig {
   expect?: ExpectSettings;
   metadata?: any;
   name?: string;
+  snapshotDir?: string;
   outputDir?: string;
   repeatEach?: number;
   retries?: number;
@@ -128,20 +156,24 @@ interface TestConfig {
 
 export interface Config<TestArgs = {}, WorkerArgs = {}> extends TestConfig {
   projects?: Project<TestArgs, WorkerArgs>[];
-  define?: FixtureDefine | FixtureDefine[];
-  use?: Fixtures<{}, {}, TestArgs, WorkerArgs>;
+  use?: UseOptions<TestArgs, WorkerArgs>;
 }
 
-export interface FullConfig {
+// [internal] !!! DO NOT ADD TO THIS !!!
+// [internal] It is part of the public API and is computed from the user's config.
+// [internal] If you need new fields internally, add them to FullConfigInternal instead.
+export interface FullConfig<TestArgs = {}, WorkerArgs = {}> {
   forbidOnly: boolean;
+  fullyParallel: boolean;
   globalSetup: string | null;
   globalTeardown: string | null;
   globalTimeout: number;
   grep: RegExp | RegExp[];
   grepInvert: RegExp | RegExp[] | null;
   maxFailures: number;
+  version: string;
   preserveOutput: PreserveOutput;
-  projects: FullProject[];
+  projects: FullProject<TestArgs, WorkerArgs>[];
   reporter: ReporterDescription[];
   reportSlowTests: ReportSlowTests;
   rootDir: string;
@@ -150,65 +182,21 @@ export interface FullConfig {
   updateSnapshots: UpdateSnapshots;
   workers: number;
   webServer: WebServerConfig | null;
+  // [internal] !!! DO NOT ADD TO THIS !!! See prior note.
 }
 
 export type TestStatus = 'passed' | 'failed' | 'timedOut' | 'skipped';
 
-export interface TestError {
-  message?: string;
-  stack?: string;
-  value?: string;
-}
-
 export interface WorkerInfo {
   config: FullConfig;
   project: FullProject;
-  workerIndex: number;
 }
 
 export interface TestInfo {
   config: FullConfig;
   project: FullProject;
-  workerIndex: number;
-
-  title: string;
-  file: string;
-  line: number;
-  column: number;
-  fn: Function;
-
-  skip(): void;
-  skip(condition: boolean): void;
-  skip(condition: boolean, description: string): void;
-
-  fixme(): void;
-  fixme(condition: boolean): void;
-  fixme(condition: boolean, description: string): void;
-
-  fail(): void;
-  fail(condition: boolean): void;
-  fail(condition: boolean, description: string): void;
-
-  slow(): void;
-  slow(condition: boolean): void;
-  slow(condition: boolean, description: string): void;
-
-  setTimeout(timeout: number): void;
   expectedStatus: TestStatus;
-  timeout: number;
-  annotations: { type: string, description?: string }[];
-  attachments: { name: string, path?: string, body?: Buffer, contentType: string }[];
-  repeatEachIndex: number;
-  retry: number;
-  duration: number;
   status?: TestStatus;
-  error?: TestError;
-  stdout: (string | Buffer)[];
-  stderr: (string | Buffer)[];
-  snapshotSuffix: string;
-  outputDir: string;
-  snapshotPath: (snapshotName: string) => string;
-  outputPath: (...pathSegments: string[]) => string;
 }
 
 interface SuiteFunction {
@@ -223,30 +211,29 @@ export interface TestType<TestArgs extends KeyValue, WorkerArgs extends KeyValue
   only: TestFunction<TestArgs & WorkerArgs>;
   describe: SuiteFunction & {
     only: SuiteFunction;
+    skip: SuiteFunction;
     serial: SuiteFunction & {
       only: SuiteFunction;
     };
+    parallel: SuiteFunction & {
+      only: SuiteFunction;
+    };
+    configure: (options: { mode?: 'parallel' | 'serial' }) => void;
   };
+  skip(title: string, testFunction: (args: TestArgs & WorkerArgs, testInfo: TestInfo) => Promise<void> | void): void;
   skip(): void;
-  skip(condition: boolean): void;
-  skip(condition: boolean, description: string): void;
-  skip(callback: (args: TestArgs & WorkerArgs) => boolean): void;
-  skip(callback: (args: TestArgs & WorkerArgs) => boolean, description: string): void;
+  skip(condition: boolean, description?: string): void;
+  skip(callback: (args: TestArgs & WorkerArgs) => boolean, description?: string): void;
+  fixme(title: string, testFunction: (args: TestArgs & WorkerArgs, testInfo: TestInfo) => Promise<void> | void): void;
   fixme(): void;
-  fixme(condition: boolean): void;
-  fixme(condition: boolean, description: string): void;
-  fixme(callback: (args: TestArgs & WorkerArgs) => boolean): void;
-  fixme(callback: (args: TestArgs & WorkerArgs) => boolean, description: string): void;
+  fixme(condition: boolean, description?: string): void;
+  fixme(callback: (args: TestArgs & WorkerArgs) => boolean, description?: string): void;
   fail(): void;
-  fail(condition: boolean): void;
-  fail(condition: boolean, description: string): void;
-  fail(callback: (args: TestArgs & WorkerArgs) => boolean): void;
-  fail(callback: (args: TestArgs & WorkerArgs) => boolean, description: string): void;
+  fail(condition: boolean, description?: string): void;
+  fail(callback: (args: TestArgs & WorkerArgs) => boolean, description?: string): void;
   slow(): void;
-  slow(condition: boolean): void;
-  slow(condition: boolean, description: string): void;
-  slow(callback: (args: TestArgs & WorkerArgs) => boolean): void;
-  slow(callback: (args: TestArgs & WorkerArgs) => boolean, description: string): void;
+  slow(condition: boolean, description?: string): void;
+  slow(callback: (args: TestArgs & WorkerArgs) => boolean, description?: string): void;
   setTimeout(timeout: number): void;
   beforeEach(inner: (args: TestArgs & WorkerArgs, testInfo: TestInfo) => Promise<any> | any): void;
   afterEach(inner: (args: TestArgs & WorkerArgs, testInfo: TestInfo) => Promise<any> | any): void;
@@ -255,23 +242,23 @@ export interface TestType<TestArgs extends KeyValue, WorkerArgs extends KeyValue
   use(fixtures: Fixtures<{}, {}, TestArgs, WorkerArgs>): void;
   step(title: string, body: () => Promise<any>): Promise<any>;
   expect: Expect;
-  declare<T extends KeyValue = {}, W extends KeyValue = {}>(): TestType<TestArgs & T, WorkerArgs & W>;
-  extend<T, W extends KeyValue = {}>(fixtures: Fixtures<T, W, TestArgs, WorkerArgs>): TestType<TestArgs & T, WorkerArgs & W>;
+  extend<T extends KeyValue, W extends KeyValue = {}>(fixtures: Fixtures<T, W, TestArgs, WorkerArgs>): TestType<TestArgs & T, WorkerArgs & W>;
+  info(): TestInfo;
 }
 
 type KeyValue = { [key: string]: any };
 export type TestFixture<R, Args extends KeyValue> = (args: Args, use: (r: R) => Promise<void>, testInfo: TestInfo) => any;
 export type WorkerFixture<R, Args extends KeyValue> = (args: Args, use: (r: R) => Promise<void>, workerInfo: WorkerInfo) => any;
-type TestFixtureValue<R, Args> = R | TestFixture<R, Args>;
-type WorkerFixtureValue<R, Args> = R | WorkerFixture<R, Args>;
+type TestFixtureValue<R, Args extends KeyValue> = Exclude<R, Function> | TestFixture<R, Args>;
+type WorkerFixtureValue<R, Args extends KeyValue> = Exclude<R, Function> | WorkerFixture<R, Args>;
 export type Fixtures<T extends KeyValue = {}, W extends KeyValue = {}, PT extends KeyValue = {}, PW extends KeyValue = {}> = {
-  [K in keyof PW]?: WorkerFixtureValue<PW[K], W & PW> | [WorkerFixtureValue<PW[K], W & PW>, { scope: 'worker' }];
+  [K in keyof PW]?: WorkerFixtureValue<PW[K], W & PW> | [WorkerFixtureValue<PW[K], W & PW>, { scope: 'worker', timeout?: number | undefined }];
 } & {
-  [K in keyof PT]?: TestFixtureValue<PT[K], T & W & PT & PW> | [TestFixtureValue<PT[K], T & W & PT & PW>, { scope: 'test' }];
+  [K in keyof PT]?: TestFixtureValue<PT[K], T & W & PT & PW> | [TestFixtureValue<PT[K], T & W & PT & PW>, { scope: 'test', timeout?: number | undefined }];
 } & {
-  [K in keyof W]?: [WorkerFixtureValue<W[K], W & PW>, { scope: 'worker', auto?: boolean }];
+  [K in keyof W]?: [WorkerFixtureValue<W[K], W & PW>, { scope: 'worker', auto?: boolean, option?: boolean, timeout?: number | undefined }];
 } & {
-  [K in keyof T]?: TestFixtureValue<T[K], T & W & PT & PW> | [TestFixtureValue<T[K], T & W & PT & PW>, { scope?: 'test', auto?: boolean }];
+  [K in keyof T]?: TestFixtureValue<T[K], T & W & PT & PW> | [TestFixtureValue<T[K], T & W & PT & PW>, { scope?: 'test', auto?: boolean, option?: boolean, timeout?: number | undefined }];
 };
 
 type BrowserName = 'chromium' | 'firefox' | 'webkit';
@@ -280,6 +267,22 @@ type ColorScheme = Exclude<BrowserContextOptions['colorScheme'], undefined>;
 type ExtraHTTPHeaders = Exclude<BrowserContextOptions['extraHTTPHeaders'], undefined>;
 type Proxy = Exclude<BrowserContextOptions['proxy'], undefined>;
 type StorageState = Exclude<BrowserContextOptions['storageState'], undefined>;
+type ConnectOptions = {
+  /**
+   * A browser websocket endpoint to connect to.
+   */
+  wsEndpoint: string;
+
+  /**
+   * Additional HTTP headers to be sent with web socket connect request.
+   */
+  headers?: { [key: string]: string; };
+
+  /**
+   * Timeout in milliseconds for the connection to be established. Optional, defaults to no timeout.
+   */
+  timeout?: number;
+};
 
 export interface PlaywrightWorkerOptions {
   browserName: BrowserName;
@@ -287,12 +290,14 @@ export interface PlaywrightWorkerOptions {
   headless: boolean | undefined;
   channel: BrowserChannel | undefined;
   launchOptions: LaunchOptions;
+  connectOptions: ConnectOptions | undefined;
   screenshot: 'off' | 'on' | 'only-on-failure';
-  trace: 'off' | 'on' | 'retain-on-failure' | 'on-first-retry' | /** deprecated */ 'retry-with-trace';
-  video: VideoMode | { mode: VideoMode, size: ViewportSize };
+  trace: TraceMode | /** deprecated */ 'retry-with-trace' | { mode: TraceMode, snapshots?: boolean, screenshots?: boolean, sources?: boolean };
+  video: VideoMode | /** deprecated */ 'retry-with-video' | { mode: VideoMode, size?: ViewportSize };
 }
 
-export type VideoMode = 'off' | 'on' | 'retain-on-failure' | 'on-first-retry' | /** deprecated */ 'retry-with-video';
+export type TraceMode = 'off' | 'on' | 'retain-on-failure' | 'on-first-retry';
+export type VideoMode = 'off' | 'on' | 'retain-on-failure' | 'on-first-retry';
 
 export interface PlaywrightTestOptions {
   acceptDownloads: boolean | undefined;
@@ -327,9 +332,9 @@ export interface PlaywrightWorkerArgs {
 }
 
 export interface PlaywrightTestArgs {
-  createContext: (options?: BrowserContextOptions) => Promise<BrowserContext>;
   context: BrowserContext;
   page: Page;
+  request: APIRequestContext;
 }
 
 export type PlaywrightTestProject<TestArgs = {}, WorkerArgs = {}> = Project<PlaywrightTestOptions & TestArgs, PlaywrightWorkerOptions & WorkerArgs>;

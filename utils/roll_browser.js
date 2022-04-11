@@ -17,13 +17,13 @@
  */
 
 const path = require('path');
-const {Registry} = require('../lib/utils/registry');
+const { Registry } = require('../packages/playwright-core/lib/server');
 const fs = require('fs');
 const protocolGenerator = require('./protocol-types-generator');
 const {execSync} = require('child_process');
 
 const SCRIPT_NAME = path.basename(__filename);
-const ROOT_PATH = path.resolve(path.join(__dirname, '..'));
+const CORE_PATH = path.resolve(path.join(__dirname, '..', 'packages', 'playwright-core'));
 
 function usage() {
   return `
@@ -52,7 +52,7 @@ Example:
     console.log(`Try running ${SCRIPT_NAME} --help`);
     process.exit(1);
   }
-  const browsersJSON = require(path.join(ROOT_PATH, 'browsers.json'));
+  const browsersJSON = require(path.join(CORE_PATH, 'browsers.json'));
   const browserName = args[0].toLowerCase();
   const descriptor = browsersJSON.browsers.find(b => b.name === browserName);
   if (!descriptor) {
@@ -68,13 +68,14 @@ Example:
   descriptor.revision = String(revision);
   if (browserName === 'chromium')
     browsersJSON.browsers.find(b => b.name === 'chromium-with-symbols').revision = String(revision);
-  fs.writeFileSync(path.join(ROOT_PATH, 'browsers.json'), JSON.stringify(browsersJSON, null, 2) + '\n');
+  fs.writeFileSync(path.join(CORE_PATH, 'browsers.json'), JSON.stringify(browsersJSON, null, 2) + '\n');
 
   if (descriptor.installByDefault) {
     // 3. Download new browser.
     console.log('\nDownloading new browser...');
-    const registry = new Registry(ROOT_PATH);
-    await registry.install();
+    const registry = new Registry(browsersJSON);
+    const executables = registry.defaultExecutables();
+    await registry.install(executables);
 
     // 4. Generate types.
     console.log('\nGenerating protocol types...');
@@ -89,4 +90,8 @@ Example:
     }
   }
   console.log(`\nRolled ${browserName} to ${revision}`);
-})();
+})().catch(err => {
+  console.error(err);
+  process.exit(1);
+});
+

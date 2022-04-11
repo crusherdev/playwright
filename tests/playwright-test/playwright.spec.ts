@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-import { test, expect, stripAscii } from './playwright-test-fixtures';
+import { test, expect, stripAnsi } from './playwright-test-fixtures';
 import fs from 'fs';
 import path from 'path';
 import { spawnSync } from 'child_process';
-import { registry } from '../../src/utils/registry';
+import { registry } from '../../packages/playwright-core/lib/server';
 
 const ffmpeg = registry.findExecutable('ffmpeg')!.executablePath();
 
@@ -213,11 +213,96 @@ test('should respect context options in various contexts', async ({ runInlineTes
         await context.close();
         rimraf.sync(dir);
       });
+
+      test('another browser', async ({ playwright, browserName }) => {
+        const browser = await playwright.webkit.launch();
+        const page = await browser.newPage();
+
+        expect(await page.evaluate(() => navigator.language)).toBe('fr-CH');
+
+        await browser.close();
+      });
     `,
   }, { workers: 1 });
 
   expect(result.exitCode).toBe(0);
-  expect(result.passed).toBe(4);
+  expect(result.passed).toBe(5);
+});
+
+test('should respect headless in launchPersistent', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'playwright.config.ts': `
+      module.exports = { use: { headless: false } };
+    `,
+    'a.test.ts': `
+      import fs from 'fs';
+      import os from 'os';
+      import path from 'path';
+      import rimraf from 'rimraf';
+
+      const { test } = pwt;
+
+      test('persistent context', async ({ playwright, browserName }) => {
+        const dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'user-data-dir-'));
+        const context = await playwright[browserName].launchPersistentContext(dir);
+        const page = context.pages()[0];
+        expect(await page.evaluate(() => navigator.userAgent)).not.toContain('Headless');
+        await context.close();
+        rimraf.sync(dir);
+      });
+    `,
+  }, { workers: 1 });
+
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+});
+
+test('should respect headless in modifiers that run before tests', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'playwright.config.ts': `
+      module.exports = { use: { headless: false } };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+
+      test.skip(({ browser }) => false);
+
+      test('should work', async ({ page }) => {
+        expect(await page.evaluate(() => navigator.userAgent)).not.toContain('Headless');
+      });
+    `,
+  }, { workers: 1 });
+
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+});
+
+test('should call logger from launchOptions config', async ({ runInlineTest }, testInfo) => {
+  const result = await runInlineTest({
+    'a.test.ts': `
+      const { test } = pwt;
+      const log = [];
+      test.use({
+        launchOptions: {
+          logger: {
+            log: (name, severity, message) => log.push({name, severity, message}),
+            isEnabled: (name, severity) => severity !== 'verbose'
+          }
+        }
+      });
+
+      test('should support config logger', async ({browser, context}) => {
+        expect(browser.version()).toBeTruthy();
+        expect(log.length > 0).toBeTruthy();
+        expect(log.filter(item => item.severity === 'info').length > 0).toBeTruthy();
+        expect(log.filter(item => item.message.includes('browser.newContext started')).length > 0).toBeTruthy();
+        expect(log.filter(item => item.message.includes('browser.newContext succeeded')).length > 0).toBeTruthy();
+      });
+      `,
+  }, { workers: 1 });
+
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
 });
 
 test('should report error and pending operations on timeout', async ({ runInlineTest }, testInfo) => {
@@ -240,14 +325,83 @@ test('should report error and pending operations on timeout', async ({ runInline
   expect(result.output).toContain('Pending operations:');
   expect(result.output).toContain('- page.click at a.test.ts:9:16');
   expect(result.output).toContain('- page.textContent at a.test.ts:10:16');
-  expect(result.output).toContain('retrieving textContent from "text=More missing"');
-  expect(stripAscii(result.output)).toContain(`10 |           page.textContent('text=More missing'),`);
+  expect(result.output).toContain('waiting for selector');
+  expect(stripAnsi(result.output)).toContain(`10 |           page.textContent('text=More missing'),`);
+});
+
+test('should report error on timeout with shared page', async ({ runInlineTest }, testInfo) => {
+  const result = await runInlineTest({
+    'a.test.ts': `
+      const { test } = pwt;
+      let page;
+      test.beforeAll(async ({ browser }) => {
+        page = await browser.newPage();
+      });
+      test('passed', async () => {
+        await page.setContent('<div>Click me</div>');
+      });
+      test('timedout', async () => {
+        await page.click('text=Missing');
+      });
+    `,
+  }, { workers: 1, timeout: 2000 });
+
+  expect(result.exitCode).toBe(1);
+  expect(result.passed).toBe(1);
+  expect(result.failed).toBe(1);
+  expect(result.output).toContain('waiting for selector "text=Missing"');
+  expect(stripAnsi(result.output)).toContain(`14 |         await page.click('text=Missing');`);
+});
+
+test('should report error from beforeAll timeout', async ({ runInlineTest }, testInfo) => {
+  const result = await runInlineTest({
+    'a.test.ts': `
+      const { test } = pwt;
+      test.beforeAll(async ({ browser }) => {
+        const page = await browser.newPage();
+        await page.setContent('<div>Click me</div>');
+        await Promise.all([
+          page.click('text=Missing'),
+          page.textContent('text=More missing'),
+        ]);
+      });
+      test('ignored', () => {});
+    `,
+  }, { workers: 1, timeout: 2000 });
+
+  expect(result.exitCode).toBe(1);
+  expect(result.passed).toBe(0);
+  expect(result.failed).toBe(1);
+  expect(result.output).toContain('Timeout of 2000ms exceeded in beforeAll hook.');
+  expect(result.output).toContain('waiting for selector');
+  expect(stripAnsi(result.output)).toContain(`11 |           page.textContent('text=More missing'),`);
+});
+
+test('should not report waitForEventInfo as pending', async ({ runInlineTest }, testInfo) => {
+  const result = await runInlineTest({
+    'a.test.ts': `
+      const { test } = pwt;
+      test('timedout', async ({ page }) => {
+        await page.setContent('<div>Click me</div>');
+        await page.waitForLoadState('networkidle');
+        await page.click('text=Missing');
+      });
+    `,
+  }, { workers: 1, timeout: 2000 });
+
+  expect(result.exitCode).toBe(1);
+  expect(result.passed).toBe(0);
+  expect(result.failed).toBe(1);
+  expect(result.output).toContain('Pending operations:');
+  expect(result.output).toContain('- page.click at a.test.ts:9:20');
+  expect(result.output).not.toContain('- page.waitForLoadState');
 });
 
 test('should throw when using page in beforeAll', async ({ runInlineTest }, testInfo) => {
   const result = await runInlineTest({
     'a.test.ts': `
       const { test } = pwt;
+      test.beforeAll(() => {});
       test.beforeAll(async ({ page }) => {
       });
       test('ok', async ({ page }) => {
@@ -257,7 +411,7 @@ test('should throw when using page in beforeAll', async ({ runInlineTest }, test
 
   expect(result.exitCode).toBe(1);
   expect(result.passed).toBe(0);
-  expect(result.output).toContain(`Error: "context" and "page" fixtures are not suppoted in beforeAll. Use browser.newContext() instead.`);
+  expect(result.output).toContain(`Error: "context" and "page" fixtures are not supported in beforeAll. Use browser.newContext() instead.`);
 });
 
 test('should report click error on sigint', async ({ runInlineTest }) => {
@@ -280,7 +434,7 @@ test('should report click error on sigint', async ({ runInlineTest }) => {
   expect(result.passed).toBe(0);
   expect(result.failed).toBe(0);
   expect(result.skipped).toBe(1);
-  expect(stripAscii(result.output)).toContain(`8 |         const promise = page.click('text=Missing');`);
+  expect(stripAnsi(result.output)).toContain(`8 |         const promise = page.click('text=Missing');`);
 });
 
 test('should work with video: retain-on-failure', async ({ runInlineTest }, testInfo) => {
@@ -382,4 +536,110 @@ test('should work with video size', async ({ runInlineTest }, testInfo) => {
   const videoPlayer = new VideoPlayer(path.join(folder, file));
   expect(videoPlayer.videoWidth).toBe(220);
   expect(videoPlayer.videoHeight).toBe(110);
+});
+
+test('should work with video.path() throwing', async ({ runInlineTest }, testInfo) => {
+  // When running remotely, video.path() is not available, so we must not use it.
+  const result = await runInlineTest({
+    'playwright.config.js': `
+      module.exports = {
+        use: { video: { mode: 'on' } },
+        name: 'chromium',
+        preserveOutput: 'always',
+      };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+      test('pass', async ({ page }) => {
+        page.video().path = () => { throw new Error('No-no!'); };
+        await page.setContent('<div>PASS</div>');
+        await page.waitForTimeout(3000);
+      });
+    `,
+  }, { workers: 1 });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+  const dir = testInfo.outputPath(`test-results/a-pass-chromium/`);
+  const video = fs.readdirSync(dir).find(file => file.endsWith('webm'));
+  expect(video).toBeTruthy();
+});
+
+test('should work with connectOptions', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'playwright.config.js': `
+      module.exports = {
+        globalSetup: './global-setup',
+        use: {
+          connectOptions: {
+            wsEndpoint: process.env.CONNECT_WS_ENDPOINT,
+          },
+        },
+      };
+    `,
+    'global-setup.ts': `
+      module.exports = async () => {
+        const server = await pwt.chromium.launchServer();
+        process.env.CONNECT_WS_ENDPOINT = server.wsEndpoint();
+        return () => server.close();
+      };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+      test.use({ locale: 'fr-CH' });
+      test('pass', async ({ page }) => {
+        await page.setContent('<div>PASS</div>');
+        await expect(page.locator('div')).toHaveText('PASS');
+        expect(await page.evaluate(() => navigator.language)).toBe('fr-CH');
+      });
+    `,
+  });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+});
+
+test('should throw with bad connectOptions', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'playwright.config.js': `
+      module.exports = {
+        use: {
+          connectOptions: {
+            wsEndpoint: 'http://does-not-exist-bad-domain.oh-no-should-not-work',
+          },
+        },
+      };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+      test('pass', async ({ page }) => {
+        await page.setContent('<div>PASS</div>');
+        await expect(page.locator('div')).toHaveText('PASS');
+      });
+    `,
+  });
+  expect(result.exitCode).toBe(1);
+  expect(result.passed).toBe(0);
+  expect(result.output).toContain('browserType.connect:');
+});
+
+test('should respect connectOptions.timeout', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'playwright.config.js': `
+      module.exports = {
+        use: {
+          connectOptions: {
+            wsEndpoint: 'wss://locahost:5678',
+            timeout: 1,
+          },
+        },
+      };
+    `,
+    'a.test.ts': `
+      const { test } = pwt;
+      test('pass', async ({ page }) => {
+      });
+    `,
+  });
+  expect(result.exitCode).toBe(1);
+  expect(result.passed).toBe(0);
+  expect(result.output).toContain('browserType.connect: Timeout 1ms exceeded.');
 });

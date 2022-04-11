@@ -183,7 +183,7 @@ This method checks an element matching [`param: selector`] by performing the fol
    the DOM.
 1. Ensure that matched element is a checkbox or a radio input. If not, this method throws. If the element is already
    checked, this method returns immediately.
-1. Wait for [actionability](./actionability.md) checks on the matched element, unless [`option: force`] option is
+1. Wait for [actionability](../actionability.md) checks on the matched element, unless [`option: force`] option is
    set. If the element is detached during the checks, the whole action is retried.
 1. Scroll the element into view if needed.
 1. Use [`property: Page.mouse`] to click in the center of the element.
@@ -210,7 +210,7 @@ When all steps combined have not finished during the specified [`option: timeout
 This method clicks an element matching [`param: selector`] by performing the following steps:
 1. Find an element matching [`param: selector`]. If there is none, wait until a matching element is attached to
    the DOM.
-1. Wait for [actionability](./actionability.md) checks on the matched element, unless [`option: force`] option is
+1. Wait for [actionability](../actionability.md) checks on the matched element, unless [`option: force`] option is
    set. If the element is detached during the checks, the whole action is retried.
 1. Scroll the element into view if needed.
 1. Use [`property: Page.mouse`] to click in the center of the element, or the specified [`option: position`].
@@ -244,7 +244,7 @@ Gets the full HTML contents of the frame, including the doctype.
 This method double clicks an element matching [`param: selector`] by performing the following steps:
 1. Find an element matching [`param: selector`]. If there is none, wait until a matching element is attached to
    the DOM.
-1. Wait for [actionability](./actionability.md) checks on the matched element, unless [`option: force`] option is
+1. Wait for [actionability](../actionability.md) checks on the matched element, unless [`option: force`] option is
    set. If the element is detached during the checks, the whole action is retried.
 1. Scroll the element into view if needed.
 1. Use [`property: Page.mouse`] to double click in the center of the element, or the specified [`option: position`].
@@ -352,7 +352,7 @@ await frame.DispatchEventAsync("#source", "dragstart", new { dataTransfer });
 DOM event type: `"click"`, `"dragstart"`, etc.
 
 ### param: Frame.dispatchEvent.eventInit
-- `eventInit` <[EvaluationArgument]>
+- `eventInit` ?<[EvaluationArgument]>
 
 Optional event-specific initialization properties.
 
@@ -383,8 +383,13 @@ Optional event-specific initialization properties.
 
 Returns the return value of [`param: expression`].
 
+:::caution
+This method does not wait for the element to pass actionability checks and therefore can lead to
+the flaky tests. Use [`method: Locator.evaluate`], other [Locator] helper methods or web-first assertions instead.
+:::
+
 The method finds an element matching the specified selector within the frame and passes it as a first argument to
-[`param: expression`]. See [Working with selectors](./selectors.md) for more details. If no
+[`param: expression`]. See [Working with selectors](../selectors.md) for more details. If no
 elements match the selector, the method throws an error.
 
 If [`param: expression`] returns a [Promise], then [`method: Frame.evalOnSelector`] would wait for the promise to resolve and return its
@@ -425,7 +430,7 @@ var html = await frame.EvalOnSelectorAsync(".main-container", "(e, suffix) => e.
 ### param: Frame.evalOnSelector.selector = %%-query-selector-%%
 ### param: Frame.evalOnSelector.expression = %%-evaluate-expression-%%
 ### param: Frame.evalOnSelector.arg
-- `arg` <[EvaluationArgument]>
+- `arg` ?<[EvaluationArgument]>
 
 Optional argument to pass to [`param: expression`].
 
@@ -439,8 +444,12 @@ Optional argument to pass to [`param: expression`].
 
 Returns the return value of [`param: expression`].
 
+:::note
+In most cases, [`method: Locator.evaluateAll`], other [Locator] helper methods and web-first assertions do a better job.
+:::
+
 The method finds all elements matching the specified selector within the frame and passes an array of matched elements
-as a first argument to [`param: expression`]. See [Working with selectors](./selectors.md) for
+as a first argument to [`param: expression`]. See [Working with selectors](../selectors.md) for
 more details.
 
 If [`param: expression`] returns a [Promise], then [`method: Frame.evalOnSelectorAll`] would wait for the promise to resolve and return its
@@ -472,7 +481,7 @@ var divsCount = await frame.EvalOnSelectorAllAsync<bool>("div", "(divs, min) => 
 ### param: Frame.evalOnSelectorAll.expression = %%-evaluate-expression-%%
 
 ### param: Frame.evalOnSelectorAll.arg
-- `arg` <[EvaluationArgument]>
+- `arg` ?<[EvaluationArgument]>
 
 Optional argument to pass to [`param: expression`].
 
@@ -546,31 +555,31 @@ Console.WriteLine(await frame.EvaluateAsync<int>("1 + 2")); // prints "3"
 [ElementHandle] instances can be passed as an argument to the [`method: Frame.evaluate`]:
 
 ```js
-const bodyHandle = await frame.$('body');
+const bodyHandle = await frame.evaluate('document.body');
 const html = await frame.evaluate(([body, suffix]) => body.innerHTML + suffix, [bodyHandle, 'hello']);
 await bodyHandle.dispose();
 ```
 
 ```java
-ElementHandle bodyHandle = frame.querySelector("body");
+ElementHandle bodyHandle = frame.evaluate("document.body");
 String html = (String) frame.evaluate("([body, suffix]) => body.innerHTML + suffix", Arrays.asList(bodyHandle, "hello"));
 bodyHandle.dispose();
 ```
 
 ```python async
-body_handle = await frame.query_selector("body")
+body_handle = await frame.evaluate("document.body")
 html = await frame.evaluate("([body, suffix]) => body.innerHTML + suffix", [body_handle, "hello"])
 await body_handle.dispose()
 ```
 
 ```python sync
-body_handle = frame.query_selector("body")
+body_handle = frame.evaluate("document.body")
 html = frame.evaluate("([body, suffix]) => body.innerHTML + suffix", [body_handle, "hello"])
 body_handle.dispose()
 ```
 
 ```csharp
-var bodyHandle = await frame.QuerySelectorAsync("body");
+var bodyHandle = await frame.EvaluateAsync("document.body");
 var html = await frame.EvaluateAsync<string>("([body, suffix]) => body.innerHTML + suffix", new object [] { bodyHandle, "hello" });
 await bodyHandle.DisposeAsync();
 ```
@@ -578,7 +587,7 @@ await bodyHandle.DisposeAsync();
 ### param: Frame.evaluate.expression = %%-evaluate-expression-%%
 
 ### param: Frame.evaluate.arg
-- `arg` <[EvaluationArgument]>
+- `arg` ?<[EvaluationArgument]>
 
 Optional argument to pass to [`param: expression`].
 
@@ -637,7 +646,7 @@ a_handle = page.evaluate_handle("document") # handle for the "document"
 ```
 
 ```csharp
-var docHandle = await frame.EvalueHandleAsync("document"); // Handle for the `document`
+var docHandle = await frame.EvaluateHandleAsync("document"); // Handle for the `document`
 ```
 
 [JSHandle] instances can be passed as an argument to the [`method: Frame.evaluateHandle`]:
@@ -680,13 +689,13 @@ await resultHandle.DisposeAsync();
 ### param: Frame.evaluateHandle.expression = %%-evaluate-expression-%%
 
 ### param: Frame.evaluateHandle.arg
-- `arg` <[EvaluationArgument]>
+- `arg` ?<[EvaluationArgument]>
 
 Optional argument to pass to [`param: expression`].
 
 ## async method: Frame.fill
 
-This method waits for an element matching [`param: selector`], waits for [actionability](./actionability.md) checks, focuses the element, fills it and triggers an `input` event after filling. Note that you can pass an empty string to clear the input field.
+This method waits for an element matching [`param: selector`], waits for [actionability](../actionability.md) checks, focuses the element, fills it and triggers an `input` event after filling. Note that you can pass an empty string to clear the input field.
 
 If the target element is not an `<input>`, `<textarea>` or `[contenteditable]` element, this method throws an error. However, if the element is inside the `<label>` element that has an associated [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), the control will be filled instead.
 
@@ -754,6 +763,42 @@ var contentFrame = await frameElement.ContentFrameAsync();
 Console.WriteLine(frame == contentFrame); // -> True
 ```
 
+
+## method: Frame.frameLocator
+- returns: <[FrameLocator]>
+
+When working with iframes, you can create a frame locator that will enter the iframe and allow selecting elements
+in that iframe. Following snippet locates element with text "Submit" in the iframe with id `my-frame`,
+like `<iframe id="my-frame">`:
+
+```js
+const locator = frame.frameLocator('#my-iframe').locator('text=Submit');
+await locator.click();
+```
+
+```java
+Locator locator = frame.frameLocator("#my-iframe").locator("text=Submit");
+locator.click();
+```
+
+```python async
+locator = frame.frame_locator("#my-iframe").locator("text=Submit")
+await locator.click()
+```
+
+```python sync
+locator = frame.frame_locator("#my-iframe").locator("text=Submit")
+locator.click()
+```
+
+```csharp
+var locator = frame.FrameLocator("#my-iframe").Locator("text=Submit");
+await locator.ClickAsync();
+```
+
+### param: Frame.frameLocator.selector = %%-find-selector-%%
+
+
 ## async method: Frame.getAttribute
 - returns: <[null]|[string]>
 
@@ -777,19 +822,19 @@ Attribute name to get the value for.
 Returns the main resource response. In case of multiple redirects, the navigation will resolve with the response of the
 last redirect.
 
-`frame.goto` will throw an error if:
+The method will throw an error if:
 * there's an SSL error (e.g. in case of self-signed certificates).
 * target URL is invalid.
 * the [`option: timeout`] is exceeded during navigation.
 * the remote server does not respond or is unreachable.
 * the main resource failed to load.
 
-`frame.goto` will not throw an error when any valid HTTP status code is returned by the remote server, including 404
+The method will not throw an error when any valid HTTP status code is returned by the remote server, including 404
 "Not Found" and 500 "Internal Server Error".  The status code for such responses can be retrieved by calling
 [`method: Response.status`].
 
 :::note
-`frame.goto` either throws an error or returns a main resource response. The only exceptions are navigation to
+The method either throws an error or returns a main resource response. The only exceptions are navigation to
 `about:blank` or navigation to the same URL with a different hash, which would succeed and return `null`.
 :::
 
@@ -818,7 +863,7 @@ Referer header value. If provided it will take preference over the referer heade
 This method hovers over an element matching [`param: selector`] by performing the following steps:
 1. Find an element matching [`param: selector`]. If there is none, wait until a matching element is attached to
    the DOM.
-1. Wait for [actionability](./actionability.md) checks on the matched element, unless [`option: force`] option is
+1. Wait for [actionability](../actionability.md) checks on the matched element, unless [`option: force`] option is
    set. If the element is detached during the checks, the whole action is retried.
 1. Scroll the element into view if needed.
 1. Use [`property: Page.mouse`] to hover over the center of the element, or the specified [`option: position`].
@@ -884,7 +929,7 @@ Returns `true` if the frame has been detached, or `false` otherwise.
 ## async method: Frame.isDisabled
 - returns: <[boolean]>
 
-Returns whether the element is disabled, the opposite of [enabled](./actionability.md#enabled).
+Returns whether the element is disabled, the opposite of [enabled](../actionability.md#enabled).
 
 ### param: Frame.isDisabled.selector = %%-input-selector-%%
 
@@ -894,7 +939,7 @@ Returns whether the element is disabled, the opposite of [enabled](./actionabili
 ## async method: Frame.isEditable
 - returns: <[boolean]>
 
-Returns whether the element is [editable](./actionability.md#editable).
+Returns whether the element is [editable](../actionability.md#editable).
 
 ### param: Frame.isEditable.selector = %%-input-selector-%%
 
@@ -904,7 +949,7 @@ Returns whether the element is [editable](./actionability.md#editable).
 ## async method: Frame.isEnabled
 - returns: <[boolean]>
 
-Returns whether the element is [enabled](./actionability.md#enabled).
+Returns whether the element is [enabled](../actionability.md#enabled).
 
 ### param: Frame.isEnabled.selector = %%-input-selector-%%
 
@@ -914,22 +959,28 @@ Returns whether the element is [enabled](./actionability.md#enabled).
 ## async method: Frame.isHidden
 - returns: <[boolean]>
 
-Returns whether the element is hidden, the opposite of [visible](./actionability.md#visible).  [`option: selector`] that does not match any elements is considered hidden.
+Returns whether the element is hidden, the opposite of [visible](../actionability.md#visible).  [`option: selector`] that does not match any elements is considered hidden.
 
 ### param: Frame.isHidden.selector = %%-input-selector-%%
 
 ### option: Frame.isHidden.strict = %%-input-strict-%%
-### option: Frame.isHidden.timeout = %%-input-timeout-%%
+### option: Frame.isHidden.timeout
+- `timeout` <[float]>
+
+**DEPRECATED** This option is ignored. [`method: Frame.isHidden`] does not wait for the element to become hidden and returns immediately.
 
 ## async method: Frame.isVisible
 - returns: <[boolean]>
 
-Returns whether the element is [visible](./actionability.md#visible). [`option: selector`] that does not match any elements is considered not visible.
+Returns whether the element is [visible](../actionability.md#visible). [`option: selector`] that does not match any elements is considered not visible.
 
 ### param: Frame.isVisible.selector = %%-input-selector-%%
 
 ### option: Frame.isVisible.strict = %%-input-strict-%%
-### option: Frame.isVisible.timeout = %%-input-timeout-%%
+### option: Frame.isVisible.timeout
+- `timeout` <[float]>
+
+**DEPRECATED** This option is ignored. [`method: Frame.isVisible`] does not wait for the element to become visible and returns immediately.
 
 ## method: Frame.locator
 - returns: <[Locator]>
@@ -937,9 +988,8 @@ Returns whether the element is [visible](./actionability.md#visible). [`option: 
 The method returns an element locator that can be used to perform actions in the frame.
 Locator is resolved to the element immediately before performing an action, so a series of actions on the same locator can in fact be performed on different DOM elements. That would happen if the DOM structure between those actions has changed.
 
-Note that locator always implies visibility, so it will always be locating visible elements.
-
 ### param: Frame.locator.selector = %%-find-selector-%%
+### option: Frame.locator.-inline- = %%-locator-options-list-%%
 
 ## method: Frame.name
 - returns: <[string]>
@@ -1006,8 +1056,12 @@ Time to wait between `keydown` and `keyup` in milliseconds. Defaults to 0.
 
 Returns the ElementHandle pointing to the frame element.
 
+:::caution
+The use of [ElementHandle] is discouraged, use [Locator] objects and web-first assertions instead.
+:::
+
 The method finds an element matching the specified selector within the frame. See
-[Working with selectors](./selectors.md) for more details. If no elements match the selector,
+[Working with selectors](../selectors.md) for more details. If no elements match the selector,
 returns `null`.
 
 ### param: Frame.querySelector.selector = %%-query-selector-%%
@@ -1022,8 +1076,12 @@ returns `null`.
 
 Returns the ElementHandles pointing to the frame elements.
 
+:::caution
+The use of [ElementHandle] is discouraged, use [Locator] objects instead.
+:::
+
 The method finds all elements matching the specified selector within the frame. See
-[Working with selectors](./selectors.md) for more details. If no elements match the selector,
+[Working with selectors](../selectors.md) for more details. If no elements match the selector,
 returns empty array.
 
 ### param: Frame.querySelectorAll.selector = %%-query-selector-%%
@@ -1031,7 +1089,7 @@ returns empty array.
 ## async method: Frame.selectOption
 - returns: <[Array]<[string]>>
 
-This method waits for an element matching [`param: selector`], waits for [actionability](./actionability.md) checks, waits until all specified options are present in the `<select>` element and selects these options.
+This method waits for an element matching [`param: selector`], waits for [actionability](../actionability.md) checks, waits until all specified options are present in the `<select>` element and selects these options.
 
 If the target element is not a `<select>` element, this method throws an error. However, if the element is inside the `<label>` element that has an associated [control](https://developer.mozilla.org/en-US/docs/Web/API/HTMLLabelElement/control), the control will be used instead.
 
@@ -1093,6 +1151,34 @@ await frame.SelectOptionAsync("select#colors", new[] { "red", "green", "blue" })
 ### option: Frame.selectOption.strict = %%-input-strict-%%
 ### option: Frame.selectOption.timeout = %%-input-timeout-%%
 
+
+## async method: Frame.setChecked
+
+This method checks or unchecks an element matching [`param: selector`] by performing the following steps:
+1. Find an element matching [`param: selector`]. If there is none, wait until a matching element is attached to
+   the DOM.
+1. Ensure that matched element is a checkbox or a radio input. If not, this method throws.
+1. If the element already has the right checked state, this method returns immediately.
+1. Wait for [actionability](../actionability.md) checks on the matched element, unless [`option: force`] option is
+   set. If the element is detached during the checks, the whole action is retried.
+1. Scroll the element into view if needed.
+1. Use [`property: Page.mouse`] to click in the center of the element.
+1. Wait for initiated navigations to either succeed or fail, unless [`option: noWaitAfter`] option is set.
+1. Ensure that the element is now checked or unchecked. If not, this method throws.
+
+When all steps combined have not finished during the specified [`option: timeout`], this method throws a
+[TimeoutError]. Passing zero timeout disables this.
+
+### param: Frame.setChecked.selector = %%-input-selector-%%
+### param: Frame.setChecked.checked = %%-input-checked-%%
+### option: Frame.setChecked.force = %%-input-force-%%
+### option: Frame.setChecked.noWaitAfter = %%-input-no-wait-after-%%
+### option: Frame.setChecked.position = %%-input-position-%%
+### option: Frame.setChecked.strict = %%-input-strict-%%
+### option: Frame.setChecked.timeout = %%-input-timeout-%%
+### option: Frame.setChecked.trial = %%-input-trial-%%
+
+
 ## async method: Frame.setContent
 
 ### param: Frame.setContent.html
@@ -1123,7 +1209,7 @@ are resolved relative to the the current working directory. For empty array, cle
 This method taps an element matching [`param: selector`] by performing the following steps:
 1. Find an element matching [`param: selector`]. If there is none, wait until a matching element is attached to
    the DOM.
-1. Wait for [actionability](./actionability.md) checks on the matched element, unless [`option: force`] option is
+1. Wait for [actionability](../actionability.md) checks on the matched element, unless [`option: force`] option is
    set. If the element is detached during the checks, the whole action is retried.
 1. Scroll the element into view if needed.
 1. Use [`property: Page.touchscreen`] to tap the center of the element, or the specified [`option: position`].
@@ -1218,7 +1304,7 @@ This method checks an element matching [`param: selector`] by performing the fol
    the DOM.
 1. Ensure that matched element is a checkbox or a radio input. If not, this method throws. If the element is already
    unchecked, this method returns immediately.
-1. Wait for [actionability](./actionability.md) checks on the matched element, unless [`option: force`] option is
+1. Wait for [actionability](../actionability.md) checks on the matched element, unless [`option: force`] option is
    set. If the element is detached during the checks, the whole action is retried.
 1. Scroll the element into view if needed.
 1. Use [`property: Page.mouse`] to click in the center of the element.
@@ -1359,7 +1445,7 @@ await page.MainFrame.WaitForFunctionAsync("selector => !!document.querySelector(
 ### param: Frame.waitForFunction.expression = %%-evaluate-expression-%%
 
 ### param: Frame.waitForFunction.arg
-- `arg` <[EvaluationArgument]>
+- `arg` ?<[EvaluationArgument]>
 
 Optional argument to pass to [`param: expression`].
 
@@ -1471,6 +1557,11 @@ a navigation.
 
 Returns when element specified by selector satisfies [`option: state`] option. Returns `null` if waiting for `hidden` or
 `detached`.
+
+:::note
+Playwright automatically waits for element to be ready before performing an action. Using
+[Locator] objects and web-first assertions make the code wait-for-selector-free.
+:::
 
 Wait for the [`param: selector`] to satisfy [`option: state`] option (either appear/disappear from dom, or become
 visible/hidden). If at the moment of calling the method [`param: selector`] already satisfies the condition, the method

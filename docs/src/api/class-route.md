@@ -8,7 +8,7 @@ allows to handle the route.
 Aborts the route's request.
 
 ### param: Route.abort.errorCode
-- `errorCode` <[string]>
+- `errorCode` ?<[string]>
 
 Optional error code. Defaults to `failed`, could be one of the following:
 * `'aborted'` - An operation was aborted (due to user action)
@@ -154,7 +154,7 @@ page.route("**/*", lambda route: route.fulfill(
 ```csharp
 await page.RouteAsync("**/*", route => route.FulfillAsync(
     status: 404,
-    contentType: "text/plain", 
+    contentType: "text/plain",
     body: "Not Found!"));
 ```
 
@@ -166,7 +166,7 @@ await page.route('**/xhr_endpoint', route => route.fulfill({ path: 'mock_data.js
 
 ```java
 page.route("**/xhr_endpoint", route -> route.fulfill(
-  new Route.FulfillOptions().setPath(Paths.get("mock_data.json")));
+  new Route.FulfillOptions().setPath(Paths.get("mock_data.json"))));
 ```
 
 ```python async
@@ -219,6 +219,12 @@ Optional response body as raw bytes.
 
 File path to respond with. The content type will be inferred from file extension. If `path` is a relative path, then it
 is resolved relative to the current working directory.
+
+### option: Route.fulfill.response
+* langs: js, java, python
+- `response` <[APIResponse]>
+
+[APIResponse] to fulfill route's request with. Individual fields of the response (such as headers) can be overridden using fulfill options.
 
 ## method: Route.request
 - returns: <[Request]>

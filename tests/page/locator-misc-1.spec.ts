@@ -18,7 +18,7 @@
 import { test as it, expect } from './pageTest';
 import path from 'path';
 
-it('should hover', async ({ page, server }) => {
+it('should hover @smoke', async ({ page, server }) => {
   await page.goto(server.PREFIX + '/input/scrollable.html');
   const button = page.locator('#button-6');
   await button.hover();
@@ -55,6 +55,15 @@ it('should check the box', async ({ page }) => {
   expect(await page.evaluate('checkbox.checked')).toBe(true);
 });
 
+it('should check the box using setChecked', async ({ page }) => {
+  await page.setContent(`<input id='checkbox' type='checkbox'></input>`);
+  const input = page.locator('input');
+  await input.setChecked(true);
+  expect(await page.evaluate('checkbox.checked')).toBe(true);
+  await input.setChecked(false);
+  expect(await page.evaluate('checkbox.checked')).toBe(false);
+});
+
 it('should uncheck the box', async ({ page }) => {
   await page.setContent(`<input id='checkbox' type='checkbox' checked></input>`);
   const input = page.locator('input');
@@ -78,14 +87,20 @@ it('should focus a button', async ({ page, server }) => {
   expect(await button.evaluate(button => document.activeElement === button)).toBe(true);
 });
 
-it('should dispatch click event via ElementHandles', async ({page, server}) => {
+it('focus should respect strictness', async ({ page, server }) => {
+  await page.setContent('<div>A</div><div>B</div>');
+  const error = await page.locator('div').focus().catch(e => e);
+  expect(error.message).toContain('strict mode violation');
+});
+
+it('should dispatch click event via ElementHandles', async ({ page, server }) => {
   await page.goto(server.PREFIX + '/input/button.html');
   const button = page.locator('button');
   await button.dispatchEvent('click');
   expect(await page.evaluate(() => window['result'])).toBe('Clicked');
 });
 
-it('should upload the file', async ({page, server, asset}) => {
+it('should upload the file', async ({ page, server, asset }) => {
   await page.goto(server.PREFIX + '/input/fileupload.html');
   const filePath = path.relative(process.cwd(), asset('file-to-upload.txt'));
   const input = page.locator('input[type=file]');

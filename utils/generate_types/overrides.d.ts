@@ -17,6 +17,7 @@ import { Protocol } from './protocol';
 import { ChildProcess } from 'child_process';
 import { EventEmitter } from 'events';
 import { Readable } from 'stream';
+import { ReadStream } from 'fs';
 import { Serializable, EvaluationArgument, PageFunction, PageFunctionOn, SmartHandle, ElementHandleForTag, BindingSource } from './structs';
 
 type PageWaitForSelectorOptionsNotHidden = PageWaitForSelectorOptions & {
@@ -141,14 +142,14 @@ export interface ElementHandle<T=Node> extends JSHandle<T> {
 }
 
 export interface Locator {
-  evaluate<R, Arg>(pageFunction: PageFunctionOn<SVGElement | HTMLElement, Arg, R>, arg: Arg, options?: {
+  evaluate<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(pageFunction: PageFunctionOn<E, Arg, R>, arg: Arg, options?: {
     timeout?: number;
   }): Promise<R>;
-  evaluate<R>(pageFunction: PageFunctionOn<SVGElement | HTMLElement, void, R>, options?: {
+  evaluate<R, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(pageFunction: PageFunctionOn<E, void, R>, options?: {
     timeout?: number;
   }): Promise<R>;
-  evaluateAll<R, Arg>(pageFunction: PageFunctionOn<(SVGElement | HTMLElement)[], Arg, R>, arg: Arg): Promise<R>;
-  evaluateAll<R>(pageFunction: PageFunctionOn<(SVGElement | HTMLElement)[], void, R>): Promise<R>;
+  evaluateAll<R, Arg, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(pageFunction: PageFunctionOn<E[], Arg, R>, arg: Arg): Promise<R>;
+  evaluateAll<R, E extends SVGElement | HTMLElement = SVGElement | HTMLElement>(pageFunction: PageFunctionOn<E[], void, R>): Promise<R>;
   elementHandle(options?: {
     timeout?: number;
   }): Promise<null|ElementHandle<SVGElement | HTMLElement>>;
@@ -199,17 +200,7 @@ class TimeoutError extends Error {}
 }
 
 export interface Accessibility {
-  snapshot(options?: {
-    /**
-     * Prune uninteresting nodes from the tree. Defaults to `true`.
-     */
-    interestingOnly?: boolean;
-
-    /**
-     * The root DOM element for the snapshot. Defaults to the whole page.
-     */
-    root?: ElementHandle;
-  }): Promise<null|AccessibilityNode>;
+  snapshot(options?: AccessibilitySnapshotOptions): Promise<null|AccessibilityNode>;
 }
 
 type AccessibilityNode = {
@@ -241,7 +232,6 @@ type AccessibilityNode = {
   children?: AccessibilityNode[];
 }
 
-export const selectors: Selectors;
 export const devices: Devices & DeviceDescriptor[];
 
 //@ts-ignore this will be any if electron is not installed
@@ -343,9 +333,6 @@ export type AndroidKey =
   'Copy' |
   'Paste';
 
-export const chromium: BrowserType;
-export const firefox: BrowserType;
-export const webkit: BrowserType;
 export const _electron: Electron;
 export const _android: Android;
 

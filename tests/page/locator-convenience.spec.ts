@@ -53,10 +53,39 @@ it('inputValue should work', async ({ page, server }) => {
   const locator = page.locator('#input');
   expect(await locator.inputValue()).toBe('input value');
 
-  expect(await page.inputValue('#inner').catch(e => e.message)).toContain('Node is not an HTMLInputElement or HTMLTextAreaElement or HTMLSelectElement');
+  expect(await page.inputValue('#inner').catch(e => e.message)).toContain('Node is not an <input>, <textarea> or <select> element');
   const locator2 = page.locator('#inner');
-  expect(await locator2.inputValue().catch(e => e.message)).toContain('Node is not an HTMLInputElement or HTMLTextAreaElement or HTMLSelectElement');
+  expect(await locator2.inputValue().catch(e => e.message)).toContain('Node is not an <input>, <textarea> or <select> element');
 });
+
+it('inputValue should work on label', async ({ page, server }) => {
+  await page.setContent(`<label><input type=text></input></label>`);
+  await page.fill('input', 'foo');
+  expect(await page.locator('label').inputValue()).toBe('foo');
+});
+
+it('should get value of input with label', async ({ page }) => {
+  await page.setContent(`<label for=target>Fill me</label><input id=target value="some value">`);
+  expect(await page.inputValue('text=Fill me')).toBe('some value');
+  await expect(page.locator('text=Fill me')).toHaveValue('some value');
+});
+
+it('should get value of input with span inside the label', async ({ page }) => {
+  await page.setContent(`<label for=target><span>Fill me</span></label><input id=target value="some value">`);
+  expect(await page.inputValue('text=Fill me')).toBe('some value');
+  await expect(page.locator('text=Fill me')).toHaveValue('some value');
+});
+
+it('should get value of textarea with label', async ({ page }) => {
+  await page.setContent(`<label for=target>Fill me</label><textarea id=target>hey</textarea>`);
+  expect(await page.inputValue('text=Fill me')).toBe('hey');
+  await expect(page.locator('text=Fill me')).toHaveValue('hey');
+
+  await page.fill('textarea', 'Look at this');
+  expect(await page.inputValue('text=Fill me')).toBe('Look at this');
+  await expect(page.locator('text=Fill me')).toHaveValue('Look at this');
+});
+
 
 it('innerHTML should work', async ({ page, server }) => {
   await page.goto(`${server.PREFIX}/dom.html`);
@@ -75,10 +104,17 @@ it('innerText should work', async ({ page, server }) => {
 it('innerText should throw', async ({ page, server }) => {
   await page.setContent(`<svg>text</svg>`);
   const error1 = await page.innerText('svg').catch(e => e);
-  expect(error1.message).toContain('Not an HTMLElement');
+  expect(error1.message).toContain('Node is not an HTMLElement');
   const locator = page.locator('svg');
   const error2 = await locator.innerText().catch(e => e);
-  expect(error2.message).toContain('Not an HTMLElement');
+  expect(error2.message).toContain('Node is not an HTMLElement');
+});
+
+it('innerText should produce log', async ({ page, server }) => {
+  await page.setContent(`<div>Hello</div>`);
+  const locator = page.locator('span');
+  const error = await locator.innerText({ timeout: 1000 }).catch(e => e);
+  expect(error.message).toContain('waiting for selector "span"');
 });
 
 it('textContent should work', async ({ page, server }) => {
@@ -144,7 +180,7 @@ it('isEditable should work', async ({ page }) => {
   expect(await page.isEditable('textarea')).toBe(false);
 });
 
-it('isChecked should work', async ({page}) => {
+it('isChecked should work', async ({ page }) => {
   await page.setContent(`<input type='checkbox' checked><div>Not a checkbox</div>`);
   const element = page.locator('input');
   expect(await element.isChecked()).toBe(true);
@@ -156,12 +192,37 @@ it('isChecked should work', async ({page}) => {
   expect(error.message).toContain('Not a checkbox or radio button');
 });
 
-it('allTextContents should work', async ({page}) => {
+it('allTextContents should work', async ({ page }) => {
   await page.setContent(`<div>A</div><div>B</div><div>C</div>`);
   expect(await page.locator('div').allTextContents()).toEqual(['A', 'B', 'C']);
 });
 
-it('allInnerTexts should work', async ({page}) => {
+it('allInnerTexts should work', async ({ page }) => {
   await page.setContent(`<div>A</div><div>B</div><div>C</div>`);
   expect(await page.locator('div').allInnerTexts()).toEqual(['A', 'B', 'C']);
+});
+
+it('isVisible and isHidden should work with details', async ({ page }) => {
+  await page.setContent(`<details>
+    <summary>click to open</summary>
+      <ul>
+        <li>hidden item 1</li>
+        <li>hidden item 2</li>
+        <li>hidden item 3</li>
+      </ul
+  </details>`);
+
+  await expect(page.locator('ul')).toBeHidden();
+});
+
+it('should return page', async ({ page, server }) => {
+  await page.goto(server.PREFIX + '/frames/two-frames.html');
+  const outer = page.locator('#outer');
+  expect(outer.page()).toBe(page);
+
+  const inner = outer.locator('#inner');
+  expect(inner.page()).toBe(page);
+
+  const inFrame = page.frames()[1].locator('div');
+  expect(inFrame.page()).toBe(page);
 });

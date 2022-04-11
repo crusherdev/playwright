@@ -316,23 +316,23 @@ test('automatic fixtures should work', async ({ runInlineTest }) => {
       });
       test.beforeEach(async ({}) => {
         expect(counterWorker).toBe(1);
-        expect(counterTest === 2 || counterTest === 3).toBe(true);
+        expect(counterTest === 1 || counterTest === 2).toBe(true);
       });
       test('test 1', async ({}) => {
         expect(counterWorker).toBe(1);
-        expect(counterTest).toBe(2);
+        expect(counterTest).toBe(1);
       });
       test('test 2', async ({}) => {
         expect(counterWorker).toBe(1);
-        expect(counterTest).toBe(3);
+        expect(counterTest).toBe(2);
       });
       test.afterEach(async ({}) => {
         expect(counterWorker).toBe(1);
-        expect(counterTest === 2 || counterTest === 3).toBe(true);
+        expect(counterTest === 1 || counterTest === 2).toBe(true);
       });
       test.afterAll(async ({}) => {
         expect(counterWorker).toBe(1);
-        expect(counterTest).toBe(4);
+        expect(counterTest).toBe(2);
       });
     `
   });
@@ -492,7 +492,8 @@ test('should understand worker fixture params in overrides calling base', async 
   const result = await runInlineTest({
     'a.test.js': `
       const test1 = pwt.test.extend({
-        param: [ 'param', { scope: 'worker' }],
+        param: [ 'param', { scope: 'worker', option: true }],
+      }).extend({
         foo: async ({}, test) => await test('foo'),
         bar: async ({foo}, test) => await test(foo + '-bar'),
       });
@@ -677,4 +678,52 @@ test('worker fixture should not receive TestInfo', async ({ runInlineTest }) => 
     `
   });
   expect(result.exitCode).toBe(0);
+});
+
+test('worker teardown errors reflected in timed-out tests', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.js': `
+      const test = pwt.test.extend({
+        foo: [async ({}, use) => {
+          let cb;
+          await use(new Promise((f, r) => cb = r));
+          cb(new Error('Rejecting!'));
+        }, { scope: 'worker' }]
+      });
+      test('timedout', async ({ foo }) => {
+        await foo;
+      });
+    `,
+  }, { timeout: 1000 });
+  expect(result.exitCode).toBe(1);
+  expect(result.failed).toBe(1);
+  expect(result.output).toContain('Timeout of 1000ms exceeded.');
+  expect(result.output).toContain('Rejecting!');
+});
+
+test('should not complain about fixtures of non-focused tests', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.js': `
+      const { test } = pwt;
+      test.only('works', () => {});
+      test('unknown fixture', ({ foo }) => {});
+    `,
+  });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
+});
+
+test('should not complain about fixtures of unused hooks', async ({ runInlineTest }) => {
+  const result = await runInlineTest({
+    'a.test.js': `
+      const { test } = pwt;
+      test.only('works', () => {});
+      test.describe('unused suite', () => {
+        test.beforeAll(({ foo }) => {});
+        test('unused test', () => {});
+      });
+    `,
+  });
+  expect(result.exitCode).toBe(0);
+  expect(result.passed).toBe(1);
 });
