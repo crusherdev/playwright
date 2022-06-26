@@ -14261,12 +14261,7 @@ export interface Request {
    * ```
    *
    */
-  failure(): null|{
-    /**
-     * Human-readable error message, e.g. `'net::ERR_FAILED'`.
-     */
-    errorText: string;
-  };
+  failure(): null|string;
 
   /**
    * Returns the [Frame] that initiated this request.
@@ -14497,7 +14492,7 @@ export interface Response {
   /**
    * Waits for this response to finish, returns always `null`.
    */
-  finished(): Promise<null|Error>;
+  finished(): Promise<null|string>;
 
   /**
    * Returns the [Frame] that initiated this response.

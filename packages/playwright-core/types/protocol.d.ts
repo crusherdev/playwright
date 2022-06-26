@@ -166,7 +166,6 @@ export module Protocol {
        */
       frameId?: Page.FrameId;
     }
-    
     /**
      * The loadComplete event mirrors the load complete event sent by the browser to assistive
 technology when the web page has finished loading.
@@ -186,7 +185,6 @@ technology when the web page has finished loading.
        */
       nodes: AXNode[];
     }
-    
     /**
      * Disables the accessibility domain.
      */
@@ -609,8 +607,7 @@ animation/transition.
     }
     export type setTimingReturnValue = {
     }
-  }
-  
+  }  
   /**
    * Audits domain allows investigation of page violations and possible improvements.
    */
@@ -12590,8 +12587,7 @@ Tokens from that issuer.
       userBiddingSignals?: string;
       ads: InterestGroupAd[];
       adComponents: InterestGroupAd[];
-    }
-    
+    }    
     /**
      * A cache's contents have been modified.
      */
@@ -12649,7 +12645,6 @@ Tokens from that issuer.
       ownerOrigin: string;
       name: string;
     }
-    
     /**
      * Clears storage for origin.
      */
@@ -15905,7 +15900,6 @@ profile startTime.
        */
       entries: TypeProfileEntry[];
     }
-    
     export type consoleProfileFinishedPayload = {
       id: string;
       /**

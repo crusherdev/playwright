@@ -22,6 +22,8 @@ import type { Progress } from '../progress';
 import { ProgressController } from '../progress';
 import { serverSideCallMetadata } from '../instrumentation';
 import type * as types from '../types';
+import { PassThrough } from 'stream';
+import fs from 'fs';
 
 const fps = 25;
 
